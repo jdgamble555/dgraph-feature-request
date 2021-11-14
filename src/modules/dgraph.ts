@@ -1,4 +1,6 @@
 import { Dgraph } from "easy-dgraph";
+import { map, Observable } from 'rxjs';
+import { pipe, toObservable } from "wonka";
 import client from "./urql";
 
 // extend the original dgraph module
@@ -39,5 +41,25 @@ export class dgraph extends Dgraph {
                 }
                 return r.data ? r.data[Object.keys(r.data)[0]] : null;
             });
+    }
+    buildSubscription() {
+        this.operation('subscription');
+        const gq = super.build();
+        if (this._devMode) {
+            console.log(gq);
+        }
+        return new Observable((observable: any) => {
+            pipe(
+                client.subscription(gq),
+                toObservable
+            ).subscribe(observable);
+        }).pipe(
+            map((r: any) => {
+                if (r.error) {
+                    console.log(r.error.message);
+                }
+                return r.data ? r.data[Object.keys(r.data)[0]] : null;
+            })
+        );
     }
 }

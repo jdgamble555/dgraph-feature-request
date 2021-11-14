@@ -8,7 +8,7 @@
     Modal
   } from '@specialdoom/proi-ui/src';
   import { Icon } from '@specialdoom/proi-ui-icons/src';
-  import { dev } from '$app/env';
+  import { dev, browser } from '$app/env';
 
   import { dgraph } from '../modules/dgraph';
 
@@ -29,6 +29,8 @@
 <script type="ts">
   import { isAuthenticated, user } from '../modules/firebase';
   import { get } from 'svelte/store';
+  import { onDestroy, onMount } from 'svelte';
+  import type { Subscription } from 'rxjs';
 
   export let features: any[];
 
@@ -36,16 +38,45 @@
   let url: string;
   let showConfirm = false;
   let item: any;
+  let dgraphSub: Subscription;
+
+  onMount(() => {
+    if (browser) {
+      user.subscribe((u: any) => {
+        if (u) {
+          dgraphSub = _dgraph('feature')
+            .query({
+              name: 1,
+              url: 1,
+              id: 1,
+              votesAggregate: { count: 1 },
+              votes: { __filter: { id: u.id }, id: 1 }
+            })
+            .buildSubscription()
+            .subscribe((r: any) => {
+              features = r;
+            });
+        }
+      });
+    }
+  });
+
+  onDestroy(() => {
+    if (browser) dgraphSub.unsubscribe();
+  });
 
   async function addFeature() {
     if (get(isAuthenticated)) {
+      // optimistic update ui first
+      features = [
+        ...features,
+        { name: feature, url, id: 'x', votesAggregate: { count: 0 } }
+      ];
       const u = get(user);
-      const r = await _dgraph('feature')
+      await _dgraph('feature')
         .add({ name: 1, url: 1, id: 1, votesAggregate: { count: 1 } })
         .set({ name: feature, url, author: { id: u.id } })
         .build();
-      // update ui
-      features = [...features, r];
       toaster.success('Feature Added!');
       // update form
       feature = '';
@@ -71,24 +102,34 @@
   async function deleteFeature(id: string) {
     showConfirm = false;
     if (get(isAuthenticated)) {
-      await _dgraph('feature').delete().filter(id).build();
-      // update ui
+      // optimistic update ui first
       features = features.filter((r: any) => r.id !== id);
+      await _dgraph('feature').delete().filter(id).build();
       toaster.success('Feature Deleted!');
     } else {
       loginError();
     }
   }
 
-  async function toggleVote(id: string) {
+  async function toggleVote(id: string, voted: boolean) {
     if (get(isAuthenticated)) {
+      // optimistic update ui first
+      features = features.map((f: any) => {
+        if (f.id === id) {
+          if (voted) {
+            f.votesAggregate.count--;
+          } else {
+            f.votesAggregate.count++;
+          }
+        }
+        return f;
+      });
       const u = get(user);
       const q = await _dgraph('feature')
         .get({ votes: { __filter: { id: u.id }, id: 1, email: 1 } })
         .filter(id)
         .build()
         .then((r) => (r.votes ? r.votes[0] : null));
-
       const r = _dgraph('feature')
         .update({ votes: { id: 1, email: 1 } })
         .filter({ id });
@@ -97,17 +138,6 @@
       } else {
         await r.set({ votes: { id: u.id } }).build();
       }
-      // update ui
-      features = features.map((f: any) => {
-        if (f.id === id) {
-          if (q) {
-            f.votesAggregate.count--;
-          } else {
-            f.votesAggregate.count++;
-          }
-        }
-        return f;
-      });
       toaster.success('Vote ' + (q ? 'Removed!' : 'Added!'));
     } else {
       loginError();
@@ -147,7 +177,13 @@
       </div>
       <div class="column">
         <Tag>Votes: {feature.votesAggregate.count}</Tag>
-        <span class="thumbs-up" on:click={async () => toggleVote(feature.id)}>
+        <span
+          class="thumbs-up"
+          on:click={async () => {
+            const voted = !!(feature.votes && feature.votes[0]);
+            toggleVote(feature.id, voted);
+          }}
+        >
           <Icon type="wine" />
         </span>
         <span

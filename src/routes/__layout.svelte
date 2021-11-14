@@ -5,6 +5,7 @@
     signInWithPopup,
     signOut
   } from 'firebase/auth';
+  import { dev } from '$app/env';
 
   import '@specialdoom/proi-ui/src/proi-ui.css';
 
@@ -22,6 +23,11 @@
     signInWithPopup(auth, provider);
   }
 
+  function _dgraph(type: string) {
+    // create dgraph, print query in dev mode
+    return new dgraph(type, dev);
+  }
+
   onMount(() => {
     onAuthStateChanged(auth, (u) => {
       if (u) {
@@ -36,7 +42,7 @@
   });
 
   async function handleUser(u: any) {
-    const r = await new dgraph('user')
+    const r = await _dgraph('user')
       .get({ id: 1, email: 1, displayName: 1 })
       .filter({ email: u.email })
       .build();
@@ -49,11 +55,10 @@
   }
 
   async function createUser(u: any) {
-    const r = await new dgraph('user')
+    const r = await _dgraph('user')
       .add({ id: 1, email: 1, displayName: 1 })
       .set({ email: u.email, displayName: u.displayName })
       .build();
-    console.log(r);
     user.set(r);
   }
 
