@@ -11,14 +11,13 @@ export interface Auth {
 }
 
 initializeApp({
-    apiKey: "AIzaSyBjDcDA1EdWkG7nkUEB6oaEqUD43JAoRl4",
-    authDomain: "language-lover-dev.firebaseapp.com",
-    databaseURL: "https://language-lover-dev.firebaseio.com",
-    projectId: "language-lover-dev",
-    storageBucket: "language-lover-dev.appspot.com",
-    messagingSenderId: "1081124387924",
-    appId: "1:1081124387924:web:9501df247987457b60c1c1",
-    measurementId: "G-XKS6WT69QP"
+    apiKey: "AIzaSyCJknZXPXhNUrDd4tPFQUSv8c8cA1IBS80",
+    authDomain: "dgraph-projects.firebaseapp.com",
+    projectId: "dgraph-projects",
+    storageBucket: "dgraph-projects.appspot.com",
+    messagingSenderId: "312138459032",
+    appId: "1:312138459032:web:0f808bfeebebbdbe31eded",
+    measurementId: "G-SWSZLXNZ8V"
 });
 
 // interface for database record, not firebase record
