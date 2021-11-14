@@ -15,7 +15,18 @@ const config = {
     vite: {
       ssr: {
         external: ['whatwg-url']
-      }
+      },
+      plugins: [
+        {
+          name: 'configure-response-headers',
+          configureServer: server => {
+            server.middlewares.use((_req, res, next) => {
+              res.setHeader('Permissions-Policy', 'interest-cohort=()');
+              next();
+            });
+          }
+        }
+      ]
     }
   }
 };

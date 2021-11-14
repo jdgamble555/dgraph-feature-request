@@ -75,14 +75,11 @@
   async function addFeature() {
     if (get(isAuthenticated)) {
       // optimistic update ui first
-      features = [
-        ...features,
-        { name: feature, url, id: 'x', totalCount: 0 }
-      ];
+      features = [...features, { name: feature, url, id: 'x', totalVotes: 1 }];
       const u = get(user);
       await _dgraph('feature')
-        .add({ name: 1, url: 1, id: 1, totalCount: 1 })
-        .set({ name: feature, url, author: { id: u.id } })
+        .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
+        .set({ name: feature, url, author: { id: u.id }, votes: { id: u.id } })
         .build();
       toaster.success('Feature Added!');
       // update form
@@ -257,3 +254,14 @@ is
     cursor: pointer;
   }
 </style>
+<br />
+<br />
+<h3>Todo</h3>
+<ul>
+  <li>Edit Features</li>
+  <li>Roles / @auth for Editors and Users</li>
+  <li>Login with Magic Link</li>
+  <li>Pagination (1-10)</li>
+  <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
+</ul>
+
