@@ -18,8 +18,14 @@
   }
 
   export async function load() {
-    const r = await _dgraph('feature')
-      .query({ name: 1, url: 1, id: 1, votesAggregate: { count: 1 } })
+    const r = await _dgraph('queryFeatureSortedByVotes')
+      .customQuery({
+        id: 1,
+        url: 1,
+        name: 1,
+        votes: { id: 1 },
+        totalVotes: 1
+      })
       .networkOnly()
       .build();
     return { props: { features: r } };
@@ -44,13 +50,14 @@
     if (browser) {
       user.subscribe((u: any) => {
         if (u) {
-          dgraphSub = _dgraph('feature')
-            .query({
+          dgraphSub = _dgraph('queryFeatureSortedByVotes')
+            .filter(u.id)
+            .customQuery({
               name: 1,
               url: 1,
               id: 1,
-              votesAggregate: { count: 1 },
-              votes: { __filter: { id: u.id }, id: 1 }
+              totalVotes: 1,
+              votes: { id: 1 }
             })
             .buildSubscription()
             .subscribe((r: any) => {
@@ -70,11 +77,11 @@
       // optimistic update ui first
       features = [
         ...features,
-        { name: feature, url, id: 'x', votesAggregate: { count: 0 } }
+        { name: feature, url, id: 'x', totalCount: 0 }
       ];
       const u = get(user);
       await _dgraph('feature')
-        .add({ name: 1, url: 1, id: 1, votesAggregate: { count: 1 } })
+        .add({ name: 1, url: 1, id: 1, totalCount: 1 })
         .set({ name: feature, url, author: { id: u.id } })
         .build();
       toaster.success('Feature Added!');
@@ -117,9 +124,9 @@
       features = features.map((f: any) => {
         if (f.id === id) {
           if (voted) {
-            f.votesAggregate.count--;
+            f.totalVotes--;
           } else {
-            f.votesAggregate.count++;
+            f.totalVotes++;
           }
         }
         return f;
@@ -176,7 +183,7 @@
         </a>
       </div>
       <div class="column">
-        <Tag>Votes: {feature.votesAggregate.count}</Tag>
+        <Tag>Votes: {feature.totalVotes}</Tag>
         <span
           class="thumbs-up"
           on:click={async () => {
