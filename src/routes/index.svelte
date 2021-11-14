@@ -38,7 +38,7 @@
   let item: any;
 
   async function addFeature() {
-    if (isAuthenticated) {
+    if (get(isAuthenticated)) {
       const u = get(user);
       const r = await _dgraph('feature')
         .add({ name: 1, url: 1, id: 1, votesAggregate: { count: 1 } })
@@ -60,13 +60,17 @@
   }
 
   function confirmDelete(id: string, name: string) {
-    showConfirm = true;
-    item = { id, name };
+    if (get(isAuthenticated)) {
+      showConfirm = true;
+      item = { id, name };
+    } else {
+      loginError();
+    }
   }
 
   async function deleteFeature(id: string) {
     showConfirm = false;
-    if (isAuthenticated) {
+    if (get(isAuthenticated)) {
       await _dgraph('feature').delete().filter(id).build();
       // update ui
       features = features.filter((r: any) => r.id !== id);
@@ -77,7 +81,7 @@
   }
 
   async function toggleVote(id: string) {
-    if (isAuthenticated) {
+    if (get(isAuthenticated)) {
       const u = get(user);
       const q = await _dgraph('feature')
         .get({ votes: { __filter: { id: u.id }, id: 1, email: 1 } })
@@ -198,7 +202,7 @@ is
     grid-template-columns: auto 160px;
     justify-items: left;
     align-items: center;
-    width:fit-content;
+    width: fit-content;
   }
   .column {
     margin: 0px 10px;
