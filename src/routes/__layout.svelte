@@ -41,10 +41,10 @@
       .filter({ email: u.email })
       .build();
     // user does not exist, create user
-    if (r.length === 0) {
-      createUser(u);
-    } else {
+    if (r) {
       user.set(r);
+    } else {
+      createUser(u);
     }
   }
 
@@ -53,6 +53,7 @@
       .add({ id: 1, email: 1, displayName: 1 })
       .set({ email: u.email, displayName: u.displayName })
       .build();
+    console.log(r);
     user.set(r);
   }
 
@@ -67,7 +68,7 @@
     content="A website to vote on Dgraph feature requests!"
   />
 </svelte:head>
-<ToastProvider></ToastProvider>
+<ToastProvider />
 <nav class="navbar">
   <h3 class="nav-text">DGraph Feature Request</h3>
   {#if !$isAuthenticated}
