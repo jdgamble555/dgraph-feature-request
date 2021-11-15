@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, getIdToken, GoogleAuthProvider, isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { writable } from 'svelte/store';
+import { Observable, take } from 'rxjs';
 
 export interface Auth {
     displayName: string;
@@ -33,9 +34,54 @@ export const user = writable<UserRec>();
 export const auth = getAuth();
 export const googleProvider = new GoogleAuthProvider();
 
-export async function getToken(): Promise<any> {
-    return await new Promise((resolve: any, reject: any) =>
-        onAuthStateChanged(auth, async (user: User) => {
-            if (user) { resolve(await user.getIdToken()); }
-        }, (e: any) => reject(e)));
+export async function getToken() {
+
+    const u = new Observable<User>((observer) => {
+        onAuthStateChanged(auth, (observer));
+    });
+    return await u.pipe(take(1))
+        .toPromise()
+        .then(async (_user) => _user
+            ? await getIdToken(_user)
+            : null
+        );
+}
+
+export async function sendEmailLink(host: string, email: string, isDev = false): Promise<void> {
+    const actionCodeSettings = {
+        // Your redirect URL
+        url: (isDev ? 'http://' : 'https://') + host,
+        handleCodeInApp: true,
+    };
+    try {
+        await sendSignInLinkToEmail(
+            auth,
+            email,
+            actionCodeSettings
+        );
+        localStorage.setItem('emailForSignIn', email);
+    } catch (e: any) {
+        console.error(e);
+    }
+}
+
+export async function confirmSignIn(url: string, email?: string): Promise<boolean> {
+    if (!email) {
+        email = localStorage.getItem('emailForSignIn') || undefined;
+    }
+    try {
+        if (isSignInWithEmailLink(auth, url)) {
+
+            // login user and remove the email localStorage
+            if (email) {
+                const r = await signInWithEmailLink(auth as any, email, url)
+                localStorage.removeItem('emailForSignIn');
+                await auth.updateCurrentUser(r.user);
+                return true;
+            }
+        }
+    } catch (e: any) {
+        console.error(e);
+    }
+    return false;
 }

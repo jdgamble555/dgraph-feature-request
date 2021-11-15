@@ -1,0 +1,124 @@
+enum UserRole {
+  ADMIN
+  AUTHOR
+}
+
+type User @withSubscription @auth(
+  add: {
+    or: [
+      # allow admins to add new users manually
+      { rule: "query ($email: String!) { queryUser { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" },
+      # allow users with role author to be added
+      { rule: "query ($email: String!) { queryUser(filter: { email: { eq: $email }, role: { eq: AUTHOR } }) { id } }" },
+      # a system JWT that allows the login script to create new users. TODO: change to something unique to the system JWT
+      { rule: "{$system:{eq:true}}" }
+    ]
+  }
+  # admin 
+  update: { rule: "query ($email: String!) { queryUser { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" },
+  delete: { rule: "query ($email: String!) { queryUser { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" },
+  query: { 
+    or: [
+      # query only own user
+      { rule: "query ($email: String!) { queryUser(filter: { email: { eq: $email } }) { id } }" },
+      # admins can query all users
+      { rule: "query ($email: String!) { queryUser { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" }
+    ]
+  }
+) {
+  id:ID!
+  email: String! @search(by:[hash]) @id
+  displayName: String!
+  votedFor:[Feature]
+  suggested: [Feature]
+  createdAt: DateTime
+  link: Link!
+  role: UserRole @search
+}
+
+type Feature @withSubscription @auth(
+  # only add Feature if you are the author and you have added the link correctly
+  add: { rule: "query ($email: String!) { queryFeature { author(filter: { email: { eq: $email } }) { id } link { users(filter: { email: { eq: $email } }) { id } } } }" },
+  update: {
+    or: [
+      # update your own Feature
+      { rule: "query ($email: String!) { queryFeature { author(filter: { email: { eq: $email } }) { id } } }" },
+      # admin can update Feature
+      { rule: "query ($email: String!) { queryFeature { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" }
+    ]
+  }
+  delete: {
+    or: [
+      # delete your own Feature
+      { rule: "query ($email: String!) { queryFeature { author(filter: { email: { eq: $email } }) { id } } }" },
+      # admin can delete Feature
+      { rule: "query ($email: String!) { queryFeature { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" }
+    ]
+  }
+) {
+  id: ID!
+  name: String! @search(by:[fulltext,term,hash])
+  url: String! @search(by:[exact])
+  votes: [User] @hasInverse(field:votedFor)
+  author: User @hasInverse(field: suggested)
+  createdAt: DateTime
+  link: Link!
+}
+
+type Link @auth(
+  add: { rule: "{$NEVER:{eq:\"ALWAYS\"}}" },
+  update: { rule: "{$NEVER:{eq:\"ALWAYS\"}}" },
+  delete: { rule: "{$NEVER:{eq:\"ALWAYS\"}}" }
+) @generate(
+  query: {
+    get: false,
+    query: false,
+    password: false,
+    aggregate: false
+  }
+  mutation: {
+    add: false
+    delete: false
+  }
+) {
+  id: ID!
+  lid: String! @id
+  users: [User] @hasInverse(field: link)
+  features: [Feature] @hasInverse(field: link)
+}
+
+type votesDQL @remote {
+  id: String!
+}
+
+type FeatureDQL @remote {
+  id: ID!
+  name: String
+  url: String
+  totalVotes: Int
+  votes: [votesDQL]
+}
+
+type Query @withSubscription {
+  queryFeatureSortedByVotes(id: String = "0x1"): [FeatureDQL] @withSubscription @custom(dql: """
+    query q($id:string = "0x1") {
+      var(func: type(Feature)) {
+        totalVotes as count(Feature.votes)
+      }
+      queryFeatureSortedByVotes(
+        func:type(Feature), 
+        orderdesc: val(totalVotes)
+      ) {
+        name: Feature.name
+        url: Feature.url
+        id: uid
+        totalVotes: count(Feature.votes)
+        votes: Feature.votes @filter(uid($id)) {
+          id: uid
+        }
+      }
+    }
+  """)
+}
+
+# Dgraph.Authorization {"Header":"X-Auth-Token","Namespace":"https://dgraph.io/jwt/claims","JWKURL":"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com","Audience":["dgraph-projects"]}

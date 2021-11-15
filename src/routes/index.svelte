@@ -69,7 +69,7 @@
   });
 
   onDestroy(() => {
-    if (browser) dgraphSub.unsubscribe();
+    if (browser && dgraphSub) dgraphSub.unsubscribe();
   });
 
   async function addFeature() {
@@ -79,7 +79,13 @@
       const u = get(user);
       await _dgraph('feature')
         .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
-        .set({ name: feature, url, author: { id: u.id }, votes: { id: u.id } })
+        .set({
+          name: feature,
+          url,
+          author: { id: u.id },
+          votes: { id: u.id },
+          link: { lid: 'link' }
+        })
         .build();
       toaster.success('Feature Added!');
       // update form
@@ -235,6 +241,20 @@ is
     21.09</a
   > (as far as we know)
 </strong>
+<br />
+<br />
+<h3>Todo</h3>
+<ul>
+  <li>Edit Features</li>
+  <li>Unauthorized Error Messages</li>
+  <li>Add a basic role management for admins</li>
+  <li><strike>Roles / @auth for Editors and Users</strike></li>
+  <li><strike>Login with Magic Link</strike></li>
+  <li>Pagination (1-10)</li>
+  <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
+</ul>
+
+<p>I had to move this to a paid cloud instance (will share it with other apps), so you may have lost your date! Vote again if you need to!</p>
 
 <style>
   .grid-container {
@@ -254,14 +274,3 @@ is
     cursor: pointer;
   }
 </style>
-<br />
-<br />
-<h3>Todo</h3>
-<ul>
-  <li>Edit Features</li>
-  <li>Roles / @auth for Editors and Users</li>
-  <li>Login with Magic Link</li>
-  <li>Pagination (1-10)</li>
-  <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
-</ul>
-

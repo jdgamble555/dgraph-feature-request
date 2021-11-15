@@ -9,14 +9,31 @@
 
   import '@specialdoom/proi-ui/src/proi-ui.css';
 
-  import { auth, isAuthenticated, user } from '../modules/firebase';
-  import { Button, Modal, ToastProvider } from '@specialdoom/proi-ui/src';
+  import {
+    auth,
+    confirmSignIn,
+    isAuthenticated,
+    sendEmailLink,
+    user
+  } from '../modules/firebase';
+  import {
+    Button,
+    Modal,
+    ToastProvider,
+    ModalBody,
+    Progress,
+    Input,
+    toaster
+  } from '@specialdoom/proi-ui/src';
 
   import { onMount } from 'svelte';
   import { dgraph } from '../modules/dgraph';
+  import { EnumType } from 'easy-dgraph';
+  import { page } from '$app/stores';
 
   let showModal = false;
-  let name: string;
+  let showEmail = false;
+  let email: string;
 
   function login() {
     const provider = new GoogleAuthProvider();
@@ -28,7 +45,28 @@
     return new dgraph(type, dev);
   }
 
+  function passwordlessLogin(email?: string) {
+    const url = $page.query.toString();
+    confirmSignIn(url, email).then((s) => {
+      if (s) {
+        toaster.success('You are now signed in!');
+      } else {
+        toaster.error('Your sign in link is expired!');
+      }
+    });
+  }
+
   onMount(() => {
+    // passwordless login signin
+    if ($page.query.get('apiKey')) {
+      if (localStorage.getItem('emailForSignIn')) {
+        passwordlessLogin();
+      } else {
+        showEmail = true;
+        showModal = true;
+      }
+    }
+
     onAuthStateChanged(auth, (u) => {
       if (u) {
         isAuthenticated.set(true);
@@ -57,7 +95,12 @@
   async function createUser(u: any) {
     const r = await _dgraph('user')
       .add({ id: 1, email: 1, displayName: 1 })
-      .set({ email: u.email, displayName: u.displayName })
+      .set({
+        email: u.email,
+        displayName: u.displayName,
+        link: { lid: 'link' },
+        role: new EnumType('AUTHOR')
+      })
       .build();
     user.set(r);
   }
@@ -87,12 +130,49 @@
   <slot />
 </div>
 
-<Modal bind:visible={showModal} title="Login to Vote">
-  {#if !$isAuthenticated}
-    <Button on:click={login} type="secondary">Signin with Google</Button>
-  {:else}
-    {name}
-  {/if}
+<Modal bind:visible={showModal} title="Passwordless Login">
+  <center>
+    <ModalBody>
+      <Input
+        value={email}
+        on:change={(e) => {
+          email = e.target.value;
+        }}
+        placeholder="Enter your email address..."
+      />
+      <br />
+      {#if showEmail}
+        <span
+          on:click={() => {
+            passwordlessLogin(email);
+            email = '';
+            showEmail = false;
+          }}
+        >
+          <Button>Login</Button>
+        </span>
+      {:else}
+        <span
+          on:click={() => {
+            sendEmailLink($page.host, email, dev);
+            email = '';
+            showModal = false;
+            toaster.success(
+              'Your link has been sent to your email! Check your junk folder!'
+            );
+          }}
+        >
+          <Button>Send Magic Link</Button>
+        </span>
+        <br />
+        <br />
+        OR
+        <Progress percent="100" />
+        <br />
+        <Button on:click={login} type="secondary">Signin with Google</Button>
+      {/if}
+    </ModalBody>
+  </center>
 </Modal>
 
 <style>

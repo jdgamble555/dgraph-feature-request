@@ -10,17 +10,13 @@ import {
 } from "@urql/core";
 import * as ws from 'ws';
 import type { Exchange, Operation } from '@urql/core';
+import { getToken } from "./firebase";
 
-const DGRAPH_URL = 'dawn-sun.us-west-2.aws.cloud.dgraph.io/graphql';
-
+const DGRAPH_URL = 'misty-fog.us-west-2.aws.cloud.dgraph.io/graphql';
 
 const isServerSide = typeof window === "undefined";
 
-const getHeaders = async () => {
-    return {
-        "X-Auth-Token": ''
-    };
-};
+const getHeaders = async () => ({ "X-Auth-Token": await getToken() });
 
 const subscriptionClient = new SubscriptionClient(`wss://${DGRAPH_URL}`, {
     reconnect: true,
@@ -54,16 +50,16 @@ const client = createClient({
     exchanges: [
         dedupExchange,
         cacheExchange,
+        fetchOptionsExchange(async (fetchOptions: any) => {
+            return {
+                ...fetchOptions,
+                headers: await getHeaders()
+            };
+        }),
         subscriptionExchange({
             forwardSubscription(operation) {
                 return subscriptionClient.request(operation);
             },
-        }),
-        fetchOptionsExchange(async (fetchOptions: any) => {
-            return {
-                ...fetchOptions,
-                headers: async () => await getHeaders()
-            };
         }),
         fetchExchange
     ]
