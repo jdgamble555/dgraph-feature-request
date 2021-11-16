@@ -27,7 +27,7 @@ export class dgraph extends Dgraph {
         if (this._operation === 'mutation') {
             return await client.mutation(gq, this._urlOpts).toPromise()
                 .then((r) => {
-                    console.log(r.data)
+                    //console.log(r.data)
                     if (r.error) {
                         console.log(r.error.message);
                     }

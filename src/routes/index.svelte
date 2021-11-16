@@ -26,7 +26,7 @@
         votes: { id: 1 },
         totalVotes: 1
       })
-      .networkOnly()
+      //.networkOnly()
       .build();
     return { props: { features: r } };
   }
@@ -134,21 +134,8 @@
         }
         return f;
       });
-      const u = get(user);
-      const q = await _dgraph('feature')
-        .get({ votes: { __filter: { id: u.id }, id: 1, email: 1 } })
-        .filter(id)
-        .build()
-        .then((r) => (r.votes ? r.votes[0] : null));
-      const r = _dgraph('feature')
-        .update({ votes: { id: 1, email: 1 } })
-        .filter({ id });
-      if (q) {
-        await r.remove({ votes: { id: u.id } }).build();
-      } else {
-        await r.set({ votes: { id: u.id } }).build();
-      }
-      toaster.success('Vote ' + (q ? 'Removed!' : 'Added!'));
+      _dgraph('toggleVote').filter(id).customMutation().build();
+      toaster.success('Vote ' + (voted ? 'Removed!' : 'Added!'));
     } else {
       loginError();
     }
@@ -254,7 +241,10 @@ is
   <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
 </ul>
 
-<p>I had to move this to a paid cloud instance (will share it with other apps), so you may have lost your date! Vote again if you need to!</p>
+<p>
+  I had to move this to a paid cloud instance (will share it with other apps),
+  so you may have lost your date! Vote again if you need to!
+</p>
 
 <style>
   .grid-container {

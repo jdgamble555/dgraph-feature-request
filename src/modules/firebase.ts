@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, getIdToken, GoogleAuthProvider, isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from 'firebase/auth';
+import { getAuth, getIdToken, getIdTokenResult, GoogleAuthProvider, isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { writable } from 'svelte/store';
 import { Observable, take } from 'rxjs';
@@ -41,10 +41,15 @@ export async function getToken() {
     });
     return await u.pipe(take(1))
         .toPromise()
-        .then(async (_user) => _user
-            ? await getIdToken(_user)
-            : null
-        );
+        .then(async (_user) => {
+            if (_user) {
+                const token = await getIdToken(_user);
+                //console.log(token);
+                //console.log(await getIdTokenResult(_user));
+                return token;
+            }
+            return null;
+        });
 }
 
 export async function sendEmailLink(host: string, email: string, isDev = false): Promise<void> {
