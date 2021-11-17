@@ -6,7 +6,7 @@
     toaster,
     Modal
   } from '@specialdoom/proi-ui/src';
-  import { Icon } from '@smui/icon-button';
+  import { Icon } from '@specialdoom/proi-ui-icons/src';
   import { dev, browser } from '$app/env';
 
   import { dgraph } from '../modules/dgraph';
@@ -235,27 +235,21 @@
                 toggleVote(feature.id, voted);
               }}
             >
-              <span class="icon">
-                <Icon class="material-icons">arrow_circle_up</Icon>
-              </span>
+              <Icon type="circleArrowUp" />
               <Button small>Votes: {feature.totalVotes}</Button>
             </span>
             <span
               class="thumbs-up"
               on:click={() => confirmDelete(feature.id, feature.name)}
             >
-              <span class="icon">
-                <Icon class="material-icons">delete</Icon>
-              </span>
+              <Icon type="empty" />
             </span>
             <span
               class="thumbs-up"
               on:click={() =>
                 editFeature(feature.id, feature.url, feature.name)}
             >
-              <span class="icon">
-                <Icon class="material-icons">edit</Icon>
-              </span>
+              <Icon type="edit" />
             </span>
           </div>
         </div>
@@ -338,9 +332,6 @@ is
     width: fit-content;
   }
 
-  .icon {
-    vertical-align: bottom;
-  }
   .column {
     margin: 0px 10px;
   }
