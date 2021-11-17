@@ -27,12 +27,24 @@ export class dgraph extends Dgraph {
         if (this._operation === 'mutation') {
             return await client.mutation(gq, this._urlOpts).toPromise()
                 .then((r) => {
-                    //console.log(r.data)
+                    console.log(r);
                     if (r.error) {
                         console.log(r.error.message);
                     }
                     const r1 = r.data ? Object.keys(r.data)[0] : '';
-                    return r.data && r.data[r1] ? r.data[r1][Object.keys(r.data[r1])[0]][0] : null;
+                    if (r.data) {
+                        if (r.data[r1]) {
+                            if (r.data[r1].numUids === 0) {
+                                return r.data[r1];
+                            }
+                            const r2 = r.data[r1][Object.keys(r.data[r1])[0]];
+                            if (r2[0]) {
+                                return r2[0];
+                            }
+                            return r2;
+                        }
+                    }
+                    return null;
                 });
         }
         return await client.query(gq, undefined, this._urlOpts).toPromise()

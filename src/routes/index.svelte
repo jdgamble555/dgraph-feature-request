@@ -3,11 +3,10 @@
     Input,
     Button,
     Progress,
-    Tag,
     toaster,
     Modal
   } from '@specialdoom/proi-ui/src';
-  import { Icon } from '@specialdoom/proi-ui-icons/src';
+  import { Icon } from '@smui/icon-button';
   import { dev, browser } from '$app/env';
 
   import { dgraph } from '../modules/dgraph';
@@ -41,10 +40,13 @@
   export let features: any[];
 
   let feature: string;
+  let _features: any[];
+  let fid: string;
   let url: string;
   let showConfirm = false;
   let item: any;
   let dgraphSub: Subscription;
+  let buttonType: 'edit' | 'add' = 'add';
 
   onMount(() => {
     if (browser) {
@@ -61,7 +63,9 @@
             })
             .buildSubscription()
             .subscribe((r: any) => {
-              features = r;
+              if (r) {
+                features = _features = r;
+              }
             });
         }
       });
@@ -75,22 +79,54 @@
   async function addFeature() {
     if (get(isAuthenticated)) {
       // optimistic update ui first
-      features = [...features, { name: feature, url, id: 'x', totalVotes: 1 }];
+      if (!fid) {
+        features = [
+          ...features,
+          { name: feature, url, id: 'x', totalVotes: 1 }
+        ];
+      } else {
+        features = features.map((r: any) => {
+          if (r.id === fid) {
+            r.url = url;
+            r.name = feature;
+          }
+          return r;
+        });
+      }
       const u = get(user);
-      await _dgraph('feature')
-        .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
-        .set({
-          name: feature,
-          url,
-          author: { id: u.id },
-          votes: { id: u.id },
-          link: { lid: 'link' }
-        })
-        .build();
-      toaster.success('Feature Added!');
+      let r: any;
+      if (fid) {
+        r = await _dgraph('feature')
+          .update({ name: 1, url: 1, id: 1, votes: { id: 1 } })
+          .filter(fid)
+          .set({
+            name: feature,
+            url
+          })
+          .build();
+      } else {
+        r = await _dgraph('feature')
+          .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
+          .set({
+            name: feature,
+            url,
+            author: { id: u.id },
+            votes: { id: u.id },
+            link: { lid: 'link' }
+          })
+          .build();
+      }
+      if (r.numUids === 0) {
+        toaster.error('You are not authorized to perform that action!');
+        features = _features;
+      } else {
+        toaster.success('Feature Added!');
+      }
       // update form
       feature = '';
       url = '';
+      fid = '';
+      buttonType = 'add';
     } else {
       loginError();
     }
@@ -114,11 +150,23 @@
     if (get(isAuthenticated)) {
       // optimistic update ui first
       features = features.filter((r: any) => r.id !== id);
-      await _dgraph('feature').delete().filter(id).build();
-      toaster.success('Feature Deleted!');
+      const r = await _dgraph('feature').delete().filter(id).build();
+      if (r.numUids === 0) {
+        toaster.error('You are not authorized to perform that action!');
+        features = _features;
+      } else {
+        toaster.success('Feature Deleted!');
+      }
     } else {
       loginError();
     }
+  }
+
+  function editFeature(id: string, u: string, name: string) {
+    feature = name;
+    fid = id;
+    url = u;
+    buttonType = 'edit';
   }
 
   async function toggleVote(id: string, voted: boolean) {
@@ -134,8 +182,13 @@
         }
         return f;
       });
-      _dgraph('toggleVote').filter(id).customMutation().build();
-      toaster.success('Vote ' + (voted ? 'Removed!' : 'Added!'));
+      const r = await _dgraph('toggleVote').filter(id).customMutation().build();
+      if (r.numUids === 0) {
+        toaster.error('You are not authorized to perform that action!');
+        features = _features;
+      } else {
+        toaster.success('Vote ' + (voted ? 'Removed!' : 'Added!'));
+      }
     } else {
       loginError();
     }
@@ -155,43 +208,60 @@
 </Modal>
 
 <svelte:head>
-  <title>DGraph Feature Voting System</title>
+  <title>DGraph Feature Request (Unofficial)</title>
 </svelte:head>
 <!-- hide warning -->
 {#if false}<slot />{/if}
 
-<h1>DGraph Features</h1>
+<h1>Dgraph Feature Voting System</h1>
 
 {#if features}
   <Progress percent="100" />
   <br />
-  {#each features as feature (feature.id)}
-    <div class="grid-container">
-      <div class="column">
-        <a href={feature.url}>
-          <Button small outlined>{feature.name}</Button>
-        </a>
-      </div>
-      <div class="column">
-        <Tag>Votes: {feature.totalVotes}</Tag>
-        <span
-          class="thumbs-up"
-          on:click={async () => {
-            const voted = !!(feature.votes && feature.votes[0]);
-            toggleVote(feature.id, voted);
-          }}
-        >
-          <Icon type="wine" />
-        </span>
-        <span
-          class="thumbs-up"
-          on:click={() => confirmDelete(feature.id, feature.name)}
-        >
-          <Icon type="empty" />
-        </span>
-      </div>
-    </div>
-  {/each}
+  <ol>
+    {#each features as feature (feature.id)}
+      <li>
+        <div class="grid-container">
+          <div class="column">
+            <a href={feature.url}>
+              <Button small outlined>{feature.name}</Button>
+            </a>
+          </div>
+          <div class="column">
+            <span
+              class="thumbs-up"
+              on:click={async () => {
+                const voted = !!(feature.votes && feature.votes[0]);
+                toggleVote(feature.id, voted);
+              }}
+            >
+              <span class="icon">
+                <Icon class="material-icons">arrow_circle_up</Icon>
+              </span>
+              <Button small>Votes: {feature.totalVotes}</Button>
+            </span>
+            <span
+              class="thumbs-up"
+              on:click={() => confirmDelete(feature.id, feature.name)}
+            >
+              <span class="icon">
+                <Icon class="material-icons">delete</Icon>
+              </span>
+            </span>
+            <span
+              class="thumbs-up"
+              on:click={() =>
+                editFeature(feature.id, feature.url, feature.name)}
+            >
+              <span class="icon">
+                <Icon class="material-icons">edit</Icon>
+              </span>
+            </span>
+          </div>
+        </div>
+      </li>
+    {/each}
+  </ol>
 {/if}
 
 <form on:submit|preventDefault={addFeature}>
@@ -199,46 +269,58 @@
     <br />
     <Input
       value={feature}
-      placeholder="Add a feature..."
+      placeholder="Short name of feature..."
       on:change={(e) => {
         feature = e.target.value;
       }}
     />
     <Input
       value={url}
-      placeholder="URL of feature request..."
+      placeholder="URL of feature request from discuss.dgraph.com..."
       on:change={(e) => {
         url = e.target.value;
       }}
     />
     <br />
-    <Button>Add</Button>
+    <Button>{buttonType === 'add' ? 'Add' : 'Edit'}</Button>
+    {#if buttonType === 'edit'}
+      <Button
+        on:click={() => {
+          buttonType = 'add';
+          feature = '';
+          url = '';
+          fid = '';
+        }}>Cancel</Button
+      >
+    {/if}
   </div>
 </form>
 <br />
-<center><h5>Touch the wine glass to toggle your vote!</h5></center>
+<h5><center>You can only edit and delete your own Feature.</center></h5>
 <Progress percent="100" />
 This is unofficial and does not mean anything. The hope is so the Dgraph team takes
 these seriously and puts focus on the features we want! The next official version
 is
 <strong>
   <a
-    href="https://discuss.dgraph.io/t/feature-request-update-after-auth-validation/14799/27?u=jdgamble555"
+    href="https://discuss.dgraph.io/t/next-release-date-2021-21-07/15167/5?u=jdgamble555"
   >
-    21.09</a
+    21.08</a
   > (as far as we know)
 </strong>
+<Progress percent="100" />
 <br />
 <br />
 <h3>Todo</h3>
 <ul>
-  <li>Edit Features</li>
-  <li>Unauthorized Error Messages</li>
+  <li><strike>Edit Feature</strike></li>
+  <li><strike>Unauthorized Error Messages</strike></li>
   <li>Add a basic role management for admins</li>
   <li><strike>Roles / @auth for Editors and Users</strike></li>
   <li><strike>Login with Magic Link</strike></li>
   <li>Pagination (1-10)</li>
   <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
+  <li>Add Status (Denied / Pending / New / Complete)</li>
 </ul>
 
 <p>
@@ -249,10 +331,15 @@ is
 <style>
   .grid-container {
     display: grid;
-    grid-template-columns: auto 160px;
+    grid-template-columns: 250px auto;
+    grid-column: 2;
     justify-items: left;
     align-items: center;
     width: fit-content;
+  }
+
+  .icon {
+    vertical-align: bottom;
   }
   .column {
     margin: 0px 10px;
@@ -262,5 +349,6 @@ is
   }
   .thumbs-up {
     cursor: pointer;
+    margin: 0px 3px;
   }
 </style>

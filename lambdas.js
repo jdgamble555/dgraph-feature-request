@@ -44,11 +44,11 @@ function toggleVote(_a) {
                     claimsBase64 = authHeader.value.split(".")[1];
                     claims = JSON.parse(atob(claimsBase64));
                     featureID = args.id;
-                    q = "\n        query { \n            getFeature(id: \"" + featureID + "\") { \n                votes(filter: { email: { eq: \"" + claims.email + "\" } }) { \n                    id\n                    email\n                }\n            }\n        }\n    ";
-                    return [4 /*yield*/, graphql(q)];
+                    q = "\n    query {\n        u(func: uid(\"" + featureID + "\")) {\n            uid\n            Feature.votes @filter(eq(User.email, \"" + claims.email + "\")) {\n                uid\n                User.email\n            }\n        }\n    }\n    ";
+                    return [4 /*yield*/, dql.query(q)];
                 case 1:
                     r = _b.sent();
-                    feature = r.data ? r.data.getFeature.votes.length : null;
+                    feature = r.data ? r.data.u[0]['Feature.votes'] : null;
                     type = feature ? 'delete' : 'set';
                     q2 = "\n        upsert {\n            query {\n                u(func: eq(User.email, \"" + claims.email + "\")) {\n                    User as uid\n                }\n            }\n            mutation {\n                " + type + " {\n                    <" + featureID + "> <Feature.votes> uid(User) .\n                    uid(User) <User.votedFor> <" + featureID + "> .\n                }\n            }\n        }\n    ";
                     return [4 /*yield*/, dql.mutate(q2)];

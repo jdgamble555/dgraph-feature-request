@@ -1,22 +1,23 @@
 async function toggleVote({ args, graphql, dql, authHeader }: any) {
 
     const claimsBase64 = authHeader.value.split(".")[1];
-    const claims = JSON.parse(atob(claimsBase64));    
+    const claims = JSON.parse(atob(claimsBase64));
     const featureID = args.id;
 
     const q = `
-        query { 
-            getFeature(id: "${featureID}") { 
-                votes(filter: { email: { eq: "${claims.email}" } }) { 
-                    id
-                    email
-                }
+    query {
+        u(func: uid("${featureID}")) {
+            uid
+            Feature.votes @filter(eq(User.email, "${claims.email}")) {
+                uid
+                User.email
             }
         }
+    }
     `;
 
-    const r = await graphql(q);
-    const feature = r.data ? r.data.getFeature.votes.length : null;
+    const r = await dql.query(q);
+    const feature = r.data ? r.data.u[0]['Feature.votes'] : null;
     const type = feature ? 'delete' : 'set';
 
     const q2 = `
@@ -34,7 +35,7 @@ async function toggleVote({ args, graphql, dql, authHeader }: any) {
             }
         }
     `;
-    
+
     const m = await dql.mutate(q2);
     return m.data ? type : null;
 }

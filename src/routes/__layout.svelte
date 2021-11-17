@@ -118,7 +118,7 @@
 </svelte:head>
 <ToastProvider />
 <nav class="navbar">
-  <h3 class="nav-text">DGraph Feature Request</h3>
+  <h3 class="nav-text">DGraph Feature Request (Unofficial)</h3>
   {#if !$isAuthenticated}
     <Button type="secondary" on:click={() => (showModal = true)}>Login</Button>
   {:else}
