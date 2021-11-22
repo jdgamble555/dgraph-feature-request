@@ -45,6 +45,7 @@
     {:else}
       <Button on:click={logout} small>Logout</Button>
     {/if}
+    <div style="margin: .5em" />
   </AppBar>
   <div class="fullscreen">
     <div class="s-container">

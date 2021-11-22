@@ -184,5 +184,6 @@
   }
   .add-box {
     text-align: right;
+    margin-right: 1em;
   }
 </style>
