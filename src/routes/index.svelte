@@ -98,8 +98,12 @@
 <div class="add-box">
   <Button
     on:click={() => {
-      showForm.set(true);
-      editFeatureRec.set(null);
+      if ($userState) {
+        showForm.set(true);
+        editFeatureRec.set(null);
+      } else {
+        fService.loginError();
+      }
     }}
     fab
     size="small"
@@ -115,7 +119,9 @@
       <CardTitle>
         {feature.name}
       </CardTitle>
-      <CardSubtitle><a href={feature.url}>Discuss</a></CardSubtitle>
+      <CardSubtitle
+        ><a href={feature.url} target="_new">Discuss</a></CardSubtitle
+      >
       <CardText />
       <CardActions>
         <div class="flex-container">

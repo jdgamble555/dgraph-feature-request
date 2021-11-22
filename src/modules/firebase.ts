@@ -11,7 +11,7 @@ import {
     signOut
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { Observable, take } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import config from '../config.json';
 
 export interface Auth {
@@ -44,9 +44,7 @@ export async function getToken() {
     const u = new Observable<User>((observer) => {
         onIdTokenChanged(auth, (observer));
     });
-    return await u.pipe(take(1))
-        // look at this todo!
-        .toPromise()
+    return await firstValueFrom(u)
         .then(async (_user) => _user
             ? await getIdToken(_user)
             : null

@@ -11,6 +11,9 @@
 </script>
 
 <Snackbar
+  on:outrostart={() => {
+    showSnackbarMsg.set(null);
+  }}
   class="flex-column"
   bind:active={showSnackbar}
   bottom
