@@ -59,7 +59,7 @@ type Feature @withSubscription @auth(
   id: ID!
   name: String! @search(by:[fulltext,term,hash])
   url: String! @search(by:[exact])
-  votes: [User] @hasInverse(field:votedFor)
+  votes: [User] @hasInverse(field: votedFor)
   author: User @hasInverse(field: suggested)
   createdAt: DateTime
   link: Link!

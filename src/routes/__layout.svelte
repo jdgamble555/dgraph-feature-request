@@ -67,16 +67,16 @@
       <ul>
         <li><strike>Edit Feature</strike></li>
         <li><strike>Unauthorized Error Messages</strike></li>
-        <li>Add a basic role management for admins</li>
         <li><strike>Roles / @auth for Editors and Users</strike></li>
         <li><strike>Login with Magic Link</strike></li>
+        <li>Add a basic role management for admins</li>
         <li>Pagination (1-10)</li>
         <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
         <li>Add Status (Denied / Pending / New / Complete)</li>
         <li>Potential Difficulty</li>
         <li>Fix fetch problem under the hood</li>
+        <li>Fix remote types</li>
       </ul>
-
       <p>
         I had to move this to a paid cloud instance (will share it with other
         apps), so you may have lost your date! Vote again if you need to!
