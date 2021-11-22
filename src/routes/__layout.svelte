@@ -1,179 +1,89 @@
-<script type="ts">
-  import {
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signInWithPopup,
-    signOut
-  } from 'firebase/auth';
-  import { dev } from '$app/env';
+<script lang="ts">
+  // material imports
+  import { Button, MaterialApp, AppBar, Icon } from 'svelte-materialify';
+  import { mdiThemeLightDark } from '@mdi/js';
 
-  import '@specialdoom/proi-ui/src/proi-ui.css';
+  import Auth from '../components/auth.svelte';
+  import Message from '../components/message.svelte';
+  import Confirm from './../components/confirm.svelte';
+  import { showDialog, userState } from '../stores/core';
+  import { logout } from '../modules/firebase';
+  import FeatureForm from '../components/feature-form.svelte';
 
-  import {
-    auth,
-    confirmSignIn,
-    isAuthenticated,
-    sendEmailLink,
-    user
-  } from '../modules/firebase';
-  import {
-    Button,
-    Modal,
-    ToastProvider,
-    ModalBody,
-    Progress,
-    Input,
-    toaster
-  } from '@specialdoom/proi-ui/src';
-
-  import { onMount } from 'svelte';
-  import { dgraph } from '../modules/dgraph';
-  import { EnumType } from 'easy-dgraph';
-  import { page } from '$app/stores';
-
-  let showModal = false;
-  let showEmail = false;
-  let email: string;
-
-  function login() {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
-  }
-
-  function _dgraph(type: string) {
-    // create dgraph, print query in dev mode
-    return new dgraph(type, dev);
-  }
-
-  function passwordlessLogin(email?: string) {
-    const url = $page.query.toString();
-    confirmSignIn(url, email).then((s) => {
-      if (s) {
-        toaster.success('You are now signed in!');
-      } else {
-        toaster.error('Your sign in link is expired!');
-      }
-    });
-  }
-
-  onMount(() => {
-    // passwordless login signin
-    if ($page.query.get('apiKey')) {
-      if (localStorage.getItem('emailForSignIn')) {
-        passwordlessLogin();
-      } else {
-        showEmail = true;
-        showModal = true;
-      }
-    }
-
-    onAuthStateChanged(auth, (u) => {
-      if (u) {
-        isAuthenticated.set(true);
-        showModal = false;
-        handleUser(u);
-      } else {
-        isAuthenticated.set(false);
-        user.set(null);
-      }
-    });
-  });
-
-  async function handleUser(u: any) {
-    const r = await _dgraph('user')
-      .get({ id: 1, email: 1, displayName: 1 })
-      .filter({ email: u.email })
-      .build();
-    // user does not exist, create user
-    if (r) {
-      user.set(r);
-    } else {
-      createUser(u);
-    }
-  }
-
-  async function createUser(u: any) {
-    const r = await _dgraph('user')
-      .add({ id: 1, email: 1, displayName: 1 })
-      .set({
-        email: u.email,
-        displayName: u.displayName,
-        link: { lid: 'link' },
-        role: new EnumType('AUTHOR')
-      })
-      .build();
-    user.set(r);
-  }
-
-  function logout() {
-    signOut(auth);
+  let theme: 'light' | 'dark' = 'light';
+  function toggleTheme() {
+    if (theme === 'light') theme = 'dark';
+    else theme = 'light';
   }
 </script>
 
 <svelte:head>
+  <title>DGraph Feature Request (Unofficial)</title>
   <meta
     name="description"
     content="A website to vote on Dgraph feature requests!"
   />
 </svelte:head>
-<ToastProvider />
-<nav class="navbar">
-  <h3 class="nav-text">DGraph Feature Request (Unofficial)</h3>
-  {#if !$isAuthenticated}
-    <Button type="secondary" on:click={() => (showModal = true)}>Login</Button>
-  {:else}
-    <Button type="link" on:click={logout} small>Logout</Button>
-  {/if}
-</nav>
 
-<div class="s-container">
-  <slot />
-</div>
-
-<Modal bind:visible={showModal} title="Passwordless Login">
-  <center>
-    <ModalBody>
-      <Input
-        value={email}
-        on:change={(e) => {
-          email = e.target.value;
-        }}
-        placeholder="Enter your email address..."
-      />
+<MaterialApp {theme}>
+  <!-- dialogs and snackbar -->
+  <Auth />
+  <Message />
+  <Confirm />
+  <FeatureForm />
+  <AppBar class="pink darken-1">
+    <span slot="title" class="white-text"
+      >DGraph Feature Request (Unofficial)</span
+    >
+    <div style="flex-grow:1 " />
+    <Button icon on:click={toggleTheme}>
+      <Icon path={mdiThemeLightDark} />
+    </Button>
+    <div style="margin: 1em" />
+    {#if !$userState}
+      <Button on:click={() => showDialog.set(true)}>Login</Button>
+    {:else}
+      <Button on:click={logout} small>Logout</Button>
+    {/if}
+  </AppBar>
+  <div class="fullscreen">
+    <div class="s-container">
+      <slot />
       <br />
-      {#if showEmail}
-        <span
-          on:click={() => {
-            passwordlessLogin(email);
-            email = '';
-            showEmail = false;
-          }}
+      <h5><center>You can only edit and delete your own Feature.</center></h5>
+      This is unofficial and does not mean anything. The hope is so the Dgraph team
+      takes these seriously and puts focus on the features we want! The next official
+      version is
+      <strong>
+        <a
+          href="https://discuss.dgraph.io/t/next-release-date-2021-21-07/15167/5?u=jdgamble555"
         >
-          <Button>Login</Button>
-        </span>
-      {:else}
-        <span
-          on:click={() => {
-            sendEmailLink($page.host, email, dev);
-            email = '';
-            showModal = false;
-            toaster.success(
-              'Your link has been sent to your email! Check your junk folder!'
-            );
-          }}
-        >
-          <Button>Send Magic Link</Button>
-        </span>
-        <br />
-        <br />
-        OR
-        <Progress percent="100" />
-        <br />
-        <Button on:click={login} type="secondary">Signin with Google</Button>
-      {/if}
-    </ModalBody>
-  </center>
-</Modal>
+          21.09</a
+        > (as far as we know)
+      </strong>
+      <br />
+      <br />
+      <h3>Todo</h3>
+      <ul>
+        <li><strike>Edit Feature</strike></li>
+        <li><strike>Unauthorized Error Messages</strike></li>
+        <li>Add a basic role management for admins</li>
+        <li><strike>Roles / @auth for Editors and Users</strike></li>
+        <li><strike>Login with Magic Link</strike></li>
+        <li>Pagination (1-10)</li>
+        <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
+        <li>Add Status (Denied / Pending / New / Complete)</li>
+        <li>Potential Difficulty</li>
+        <li>Fix fetch problem under the hood</li>
+      </ul>
+
+      <p>
+        I had to move this to a paid cloud instance (will share it with other
+        apps), so you may have lost your date! Vote again if you need to!
+      </p>
+    </div>
+  </div>
+</MaterialApp>
 
 <style>
   .s-container {
@@ -182,17 +92,12 @@
     padding: 5px;
     max-width: 995px;
     width: 100%;
-    background-color: transparent !important;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
   }
-  .navbar {
-    background-color: #2398ab;
-    color: white;
-  }
-
-  .nav-text {
-    margin-top: 10px;
+  .fullscreen {
+    position: relative;
+    height: 94vh;
   }
 </style>

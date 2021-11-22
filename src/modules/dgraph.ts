@@ -1,7 +1,9 @@
-import { Dgraph } from "easy-dgraph";
+import { Dgraph } from 'easy-dgraph';
+export { EnumType } from 'easy-dgraph';
 import { map, Observable } from 'rxjs';
 import { pipe, toObservable } from "wonka";
 import client from "./urql";
+
 
 // extend the original dgraph module
 export class dgraph extends Dgraph {
@@ -27,7 +29,6 @@ export class dgraph extends Dgraph {
         if (this._operation === 'mutation') {
             return await client.mutation(gq, this._urlOpts).toPromise()
                 .then((r) => {
-                    console.log(r);
                     if (r.error) {
                         console.log(r.error.message);
                     }

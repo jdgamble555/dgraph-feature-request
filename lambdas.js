@@ -35,26 +35,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 function toggleVote(_a) {
-    var args = _a.args, graphql = _a.graphql, dql = _a.dql, authHeader = _a.authHeader;
+    var args = _a.args, dql = _a.dql, authHeader = _a.authHeader;
     return __awaiter(this, void 0, void 0, function () {
-        var claimsBase64, claims, featureID, q, r, feature, type, q2, m;
+        var claimsBase64, claims, featureID, q, m;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     claimsBase64 = authHeader.value.split(".")[1];
                     claims = JSON.parse(atob(claimsBase64));
                     featureID = args.id;
-                    q = "\n    query {\n        u(func: uid(\"" + featureID + "\")) {\n            uid\n            Feature.votes @filter(eq(User.email, \"" + claims.email + "\")) {\n                uid\n                User.email\n            }\n        }\n    }\n    ";
-                    return [4 /*yield*/, dql.query(q)];
+                    q = "\n    upsert {\n        query {\n            q1(func: eq(User.email, \"" + claims.email + "\")) {\n                User as uid\n            }\n            q2(func: uid(\"" + featureID + "\")) {\n                uid\n                Feature.votes @filter(eq(User.email, \"" + claims.email + "\")) {\n                    r as uid\n                    User.email\n                }\n            }\n        }\n        mutation @if(eq(len(r), 1)) {\n            delete {\n                <" + featureID + "> <Feature.votes> uid(User) .\n                uid(User) <User.votedFor> <" + featureID + "> .\n            }\n        }\n        mutation @if(eq(len(r), 0)) {\n            set {\n                <" + featureID + "> <Feature.votes> uid(User) .\n                uid(User) <User.votedFor> <" + featureID + "> .\n            }\n        }\n    }";
+                    return [4 /*yield*/, dql.mutate(q)];
                 case 1:
-                    r = _b.sent();
-                    feature = r.data ? r.data.u[0]['Feature.votes'] : null;
-                    type = feature ? 'delete' : 'set';
-                    q2 = "\n        upsert {\n            query {\n                u(func: eq(User.email, \"" + claims.email + "\")) {\n                    User as uid\n                }\n            }\n            mutation {\n                " + type + " {\n                    <" + featureID + "> <Feature.votes> uid(User) .\n                    uid(User) <User.votedFor> <" + featureID + "> .\n                }\n            }\n        }\n    ";
-                    return [4 /*yield*/, dql.mutate(q2)];
-                case 2:
                     m = _b.sent();
-                    return [2 /*return*/, m.data ? type : null];
+                    return [2 /*return*/, featureID];
             }
         });
     });

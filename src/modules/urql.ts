@@ -6,13 +6,15 @@ import {
     fetchExchange,
     subscriptionExchange,
     createClient,
-    makeOperation
+    makeOperation,
+    ssrExchange
 } from "@urql/core";
 import * as ws from 'ws';
 import type { Exchange, Operation } from '@urql/core';
 import { getToken } from "./firebase";
+import config from '../config.json';
 
-const DGRAPH_URL = 'misty-fog.us-west-2.aws.cloud.dgraph.io/graphql';
+const DGRAPH_URL = config['dgraph'];
 
 const isServerSide = typeof window === "undefined";
 
@@ -24,6 +26,10 @@ const subscriptionClient = new SubscriptionClient(`wss://${DGRAPH_URL}`, {
     connectionParams: async () => await getHeaders()
 }, isServerSide ? ws : null);
 
+export const ssr = ssrExchange({
+    isClient: !isServerSide,
+    initialState: !isServerSide ? window['__URQL_DATA__'] : undefined,
+});
 
 // allow for async headers...
 const fetchOptionsExchange = (fn: any): Exchange => ({ forward }) => ops$ => {
@@ -50,6 +56,7 @@ const client = createClient({
     exchanges: [
         dedupExchange,
         cacheExchange,
+        ssr,
         fetchOptionsExchange(async (fetchOptions: any) => {
             return {
                 ...fetchOptions,
@@ -64,5 +71,11 @@ const client = createClient({
         fetchExchange
     ]
 });
+
+export const data = `
+<script lang="ts"> 
+  window.__URQL_DATA__ = JSON.parse(JSON.stringify(__SSR__)); 
+</script>
+`;
 
 export default client

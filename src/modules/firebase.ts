@@ -1,8 +1,18 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, getIdToken, getIdTokenResult, GoogleAuthProvider, isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from 'firebase/auth';
+import {
+    getAuth,
+    getIdToken,
+    GoogleAuthProvider,
+    isSignInWithEmailLink,
+    onIdTokenChanged,
+    sendSignInLinkToEmail,
+    signInWithEmailLink,
+    signInWithPopup,
+    signOut
+} from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { writable } from 'svelte/store';
 import { Observable, take } from 'rxjs';
+import config from '../config.json';
 
 export interface Auth {
     displayName: string;
@@ -11,45 +21,36 @@ export interface Auth {
     email: string;
 }
 
-initializeApp({
-    apiKey: "AIzaSyCJknZXPXhNUrDd4tPFQUSv8c8cA1IBS80",
-    authDomain: "dgraph-projects.firebaseapp.com",
-    projectId: "dgraph-projects",
-    storageBucket: "dgraph-projects.appspot.com",
-    messagingSenderId: "312138459032",
-    appId: "1:312138459032:web:0f808bfeebebbdbe31eded",
-    measurementId: "G-SWSZLXNZ8V"
-});
+initializeApp(config['firebase']);
 
 // interface for database record, not firebase record
-interface UserRec {
+export interface UserRec {
     id?: string;
     email?: string;
     displayName?: string;
 }
 
-export const isAuthenticated = writable(false);
-export const user = writable<UserRec>();
+const auth = getAuth();
 
-export const auth = getAuth();
-export const googleProvider = new GoogleAuthProvider();
+export async function loginWithGoogle() {
+    return await signInWithPopup(auth, new GoogleAuthProvider());
+}
+
+export async function logout() {
+    return await signOut(auth);
+}
 
 export async function getToken() {
-
     const u = new Observable<User>((observer) => {
-        onAuthStateChanged(auth, (observer));
+        onIdTokenChanged(auth, (observer));
     });
     return await u.pipe(take(1))
+        // look at this todo!
         .toPromise()
-        .then(async (_user) => {
-            if (_user) {
-                const token = await getIdToken(_user);
-                //console.log(token);
-                //console.log(await getIdTokenResult(_user));
-                return token;
-            }
-            return null;
-        });
+        .then(async (_user) => _user
+            ? await getIdToken(_user)
+            : null
+        );
 }
 
 export async function sendEmailLink(host: string, email: string, isDev = false): Promise<void> {
@@ -76,7 +77,6 @@ export async function confirmSignIn(url: string, email?: string): Promise<boolea
     }
     try {
         if (isSignInWithEmailLink(auth, url)) {
-
             // login user and remove the email localStorage
             if (email) {
                 const r = await signInWithEmailLink(auth as any, email, url)
@@ -89,4 +89,15 @@ export async function confirmSignIn(url: string, email?: string): Promise<boolea
         console.error(e);
     }
     return false;
+}
+
+export function user(): Observable<User | null> {
+    return new Observable((subscriber) => {
+        const unsubscribe = onIdTokenChanged(auth,
+            subscriber.next.bind(subscriber),
+            subscriber.error.bind(subscriber),
+            subscriber.complete.bind(subscriber),
+        );
+        return { unsubscribe };
+    });
 }

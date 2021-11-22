@@ -1,0 +1,12 @@
+{
+  "firebase": {
+    "apiKey": "AIzaSyCJknZXPXhNUrDd4tPFQUSv8c8cA1IBS80",
+    "authDomain": "dgraph-projects.firebaseapp.com",
+    "projectId": "dgraph-projects",
+    "storageBucket": "dgraph-projects.appspot.com",
+    "messagingSenderId": "312138459032",
+    "appId": "1:312138459032:web:0f808bfeebebbdbe31eded",
+    "measurementId": "G-SWSZLXNZ8V"
+  },
+  "dgraph": "misty-fog.us-west-2.aws.cloud.dgraph.io/graphql"
+}

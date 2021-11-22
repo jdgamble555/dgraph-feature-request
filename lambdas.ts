@@ -1,43 +1,39 @@
-async function toggleVote({ args, graphql, dql, authHeader }: any) {
+async function toggleVote({ args, dql, authHeader }: any) {
 
     const claimsBase64 = authHeader.value.split(".")[1];
     const claims = JSON.parse(atob(claimsBase64));
     const featureID = args.id;
 
     const q = `
-    query {
-        u(func: uid("${featureID}")) {
-            uid
-            Feature.votes @filter(eq(User.email, "${claims.email}")) {
+    upsert {
+        query {
+            q1(func: eq(User.email, "${claims.email}")) {
+                User as uid
+            }
+            q2(func: uid("${featureID}")) {
                 uid
-                User.email
-            }
-        }
-    }
-    `;
-
-    const r = await dql.query(q);
-    const feature = r.data ? r.data.u[0]['Feature.votes'] : null;
-    const type = feature ? 'delete' : 'set';
-
-    const q2 = `
-        upsert {
-            query {
-                u(func: eq(User.email, "${claims.email}")) {
-                    User as uid
-                }
-            }
-            mutation {
-                ${type} {
-                    <${featureID}> <Feature.votes> uid(User) .
-                    uid(User) <User.votedFor> <${featureID}> .
+                Feature.votes @filter(eq(User.email, "${claims.email}")) {
+                    r as uid
+                    User.email
                 }
             }
         }
-    `;
+        mutation @if(eq(len(r), 1)) {
+            delete {
+                <${featureID}> <Feature.votes> uid(User) .
+                uid(User) <User.votedFor> <${featureID}> .
+            }
+        }
+        mutation @if(eq(len(r), 0)) {
+            set {
+                <${featureID}> <Feature.votes> uid(User) .
+                uid(User) <User.votedFor> <${featureID}> .
+            }
+        }
+    }`;
 
-    const m = await dql.mutate(q2);
-    return m.data ? type : null;
+    const m = await dql.mutate(q);
+    return featureID;
 }
 
 (self as any).addGraphQLResolvers({

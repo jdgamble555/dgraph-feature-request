@@ -1,345 +1,182 @@
-<script context="module" type="ts">
-  import {
-    Input,
-    Button,
-    Progress,
-    toaster,
-    Modal
-  } from '@specialdoom/proi-ui/src';
-  import { Icon } from '@specialdoom/proi-ui-icons/src';
+<script context="module" lang="ts">
   import { dev, browser } from '$app/env';
-
-  import { dgraph } from '../modules/dgraph';
-
-  function _dgraph(type: string) {
-    // create dgraph, print query in dev mode
-    return new dgraph(type, dev);
-  }
+  import { ssr, data } from '../modules/urql';
 
   export async function load() {
-    const r = await _dgraph('queryFeatureSortedByVotes')
-      .customQuery({
-        id: 1,
-        url: 1,
-        name: 1,
-        votes: { id: 1 },
-        totalVotes: 1
-      })
-      //.networkOnly()
-      .build();
-    return { props: { features: r } };
+    // restore data from server to prevent double fetching
+    if (browser) {
+      ssr.restoreData(window['__URQL_DATA__']);
+    }
+    // get features
+    const r = await Feature.queryFeature(dev);
+    featureStore.set(r);
+
+    // get data as string to save to script tag
+    const d = browser
+      ? ''
+      : data.replace('__SSR__', JSON.stringify(ssr.extractData()));
+    return { props: { features: r, d } };
   }
 </script>
 
-<script type="ts">
-  import { isAuthenticated, user } from '../modules/firebase';
-  import { get } from 'svelte/store';
+<script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+
   import type { Subscription } from 'rxjs';
+  import type { Unsubscriber } from 'svelte/store';
+
+  import { Feature } from '../modules/feature';
+
+  // material imports
+  import {
+    Button,
+    Card,
+    CardTitle,
+    Icon,
+    CardText,
+    CardSubtitle,
+    CardActions
+  } from 'svelte-materialify';
+  import {
+    featureStore,
+    showConfirm,
+    delFeatureRec,
+    userState,
+    showForm,
+    editFeatureRec
+  } from '../stores/core';
+  import {
+    mdiChevronUpCircleOutline,
+    mdiDeleteVariant,
+    mdiNoteEditOutline,
+    mdiPlusBox
+  } from '@mdi/js';
 
   export let features: any[];
+  export let d: any;
 
-  let feature: string;
-  let _features: any[];
-  let fid: string;
-  let url: string;
-  let showConfirm = false;
-  let item: any;
   let dgraphSub: Subscription;
-  let buttonType: 'edit' | 'add' = 'add';
+
+  let userSub: Unsubscriber;
+  let featureSub: Unsubscriber;
+
+  let fService = new Feature(dev);
 
   onMount(() => {
-    if (browser) {
-      user.subscribe((u: any) => {
-        if (u) {
-          dgraphSub = _dgraph('queryFeatureSortedByVotes')
-            .filter(u.id)
-            .customQuery({
-              name: 1,
-              url: 1,
-              id: 1,
-              totalVotes: 1,
-              votes: { id: 1 }
-            })
-            .buildSubscription()
-            .subscribe((r: any) => {
-              if (r) {
-                features = _features = r;
-              }
-            });
-        }
-      });
-    }
+    // load feature module
+    userSub = userState.subscribe((u: any) => {
+      if (u) {
+        dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
+          if (r) {
+            featureStore.set(r);
+            features = r;
+          }
+        });
+      }
+    });
+
+    // update on add / update / delete optimistically
+    featureSub = featureStore.subscribe((fs: any) => {
+      features = fs;
+    });
   });
 
   onDestroy(() => {
-    if (browser && dgraphSub) dgraphSub.unsubscribe();
+    if (dgraphSub) dgraphSub.unsubscribe();
+    if (userSub) userSub();
+    if (featureSub) featureSub();
   });
-
-  async function addFeature() {
-    if (get(isAuthenticated)) {
-      // optimistic update ui first
-      if (!fid) {
-        features = [
-          ...features,
-          { name: feature, url, id: 'x', totalVotes: 1 }
-        ];
-      } else {
-        features = features.map((r: any) => {
-          if (r.id === fid) {
-            r.url = url;
-            r.name = feature;
-          }
-          return r;
-        });
-      }
-      const u = get(user);
-      let r: any;
-      if (fid) {
-        r = await _dgraph('feature')
-          .update({ name: 1, url: 1, id: 1, votes: { id: 1 } })
-          .filter(fid)
-          .set({
-            name: feature,
-            url
-          })
-          .build();
-      } else {
-        r = await _dgraph('feature')
-          .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
-          .set({
-            name: feature,
-            url,
-            author: { id: u.id },
-            votes: { id: u.id },
-            link: { lid: 'link' }
-          })
-          .build();
-      }
-      if (r.numUids === 0) {
-        toaster.error('You are not authorized to perform that action!');
-        features = _features;
-      } else {
-        toaster.success('Feature Added!');
-      }
-      // update form
-      feature = '';
-      url = '';
-      fid = '';
-      buttonType = 'add';
-    } else {
-      loginError();
-    }
-  }
-
-  async function loginError() {
-    toaster.error('You must be logged in for that!');
-  }
-
-  function confirmDelete(id: string, name: string) {
-    if (get(isAuthenticated)) {
-      showConfirm = true;
-      item = { id, name };
-    } else {
-      loginError();
-    }
-  }
-
-  async function deleteFeature(id: string) {
-    showConfirm = false;
-    if (get(isAuthenticated)) {
-      // optimistic update ui first
-      features = features.filter((r: any) => r.id !== id);
-      const r = await _dgraph('feature').delete().filter(id).build();
-      if (r.numUids === 0) {
-        toaster.error('You are not authorized to perform that action!');
-        features = _features;
-      } else {
-        toaster.success('Feature Deleted!');
-      }
-    } else {
-      loginError();
-    }
-  }
-
-  function editFeature(id: string, u: string, name: string) {
-    feature = name;
-    fid = id;
-    url = u;
-    buttonType = 'edit';
-  }
-
-  async function toggleVote(id: string, voted: boolean) {
-    if (get(isAuthenticated)) {
-      // optimistic update ui first
-      features = features.map((f: any) => {
-        if (f.id === id) {
-          if (voted) {
-            f.totalVotes--;
-          } else {
-            f.totalVotes++;
-          }
-        }
-        return f;
-      });
-      const r = await _dgraph('toggleVote').filter(id).customMutation().build();
-      if (r.numUids === 0) {
-        toaster.error('You are not authorized to perform that action!');
-        features = _features;
-      } else {
-        toaster.success('Vote ' + (voted ? 'Removed!' : 'Added!'));
-      }
-    } else {
-      loginError();
-    }
-  }
 </script>
 
-<Modal
-  bind:visible={showConfirm}
-  title="Are you sure you want to delete &quot{item?.name}&quot?"
->
-  <Button
-    on:click={() => {
-      showConfirm = false;
-    }}>No</Button
-  >
-  <Button on:click={() => deleteFeature(item?.id)}>Yes</Button>
-</Modal>
-
-<svelte:head>
-  <title>DGraph Feature Request (Unofficial)</title>
-</svelte:head>
 <!-- hide warning -->
 {#if false}<slot />{/if}
 
-<h1>Dgraph Feature Voting System</h1>
+<!-- save data to script tag to restore on client -->
+{@html d}
 
+<h3>Dgraph Feature Voting System</h3>
+<div class="add-box">
+  <Button
+    on:click={() => {
+      showForm.set(true);
+      editFeatureRec.set(null);
+    }}
+    fab
+    size="small"
+    class="pink accent-3 white-text"
+  >
+    <Icon path={mdiPlusBox} />
+  </Button>
+</div>
+<br />
 {#if features}
-  <Progress percent="100" />
-  <br />
-  <ol>
-    {#each features as feature (feature.id)}
-      <li>
-        <div class="grid-container">
-          <div class="column">
-            <a href={feature.url}>
-              <Button small outlined>{feature.name}</Button>
-            </a>
-          </div>
-          <div class="column">
-            <span
-              class="thumbs-up"
-              on:click={async () => {
-                const voted = !!(feature.votes && feature.votes[0]);
-                toggleVote(feature.id, voted);
-              }}
-            >
-              <Icon type="circleArrowUp" />
-              <Button small>Votes: {feature.totalVotes}</Button>
-            </span>
-            <span
-              class="thumbs-up"
-              on:click={() => confirmDelete(feature.id, feature.name)}
-            >
-              <Icon type="empty" />
-            </span>
-            <span
-              class="thumbs-up"
-              on:click={() =>
-                editFeature(feature.id, feature.url, feature.name)}
-            >
-              <Icon type="edit" />
-            </span>
-          </div>
+  {#each features as feature (feature.id)}
+    <Card outlined>
+      <CardTitle>
+        {feature.name}
+      </CardTitle>
+      <CardSubtitle><a href={feature.url}>Discuss</a></CardSubtitle>
+      <CardText />
+      <CardActions>
+        <div class="flex-container">
+          <Button
+            class="purple darken-3 white-text"
+            on:click={async () => {
+              const voted = !!(feature.votes && feature.votes[0]);
+              fService.toggleVote(feature.id, voted);
+            }}
+          >
+            <Icon path={mdiChevronUpCircleOutline} class="mr-3" />
+            Votes: {feature.totalVotes}
+          </Button>
+          {#if $userState && feature.author.id === $userState.id}
+            <div class="flex-row">
+              <Button
+                icon
+                on:click={() => {
+                  delFeatureRec.set({
+                    name: feature.name,
+                    id: feature.id
+                  });
+                  showConfirm.set(true);
+                }}
+              >
+                <Icon path={mdiDeleteVariant} />
+              </Button>
+              <Button
+                icon
+                on:click={() => {
+                  editFeatureRec.set({
+                    id: feature.id,
+                    url: feature.url,
+                    name: feature.name
+                  });
+                  showForm.set(true);
+                }}
+              >
+                <Icon path={mdiNoteEditOutline} />
+              </Button>
+            </div>
+          {/if}
         </div>
-      </li>
-    {/each}
-  </ol>
+      </CardActions>
+    </Card>
+    <br />
+  {/each}
 {/if}
 
-<form on:submit|preventDefault={addFeature}>
-  <div class="inputs">
-    <br />
-    <Input
-      value={feature}
-      placeholder="Short name of feature..."
-      on:change={(e) => {
-        feature = e.target.value;
-      }}
-    />
-    <Input
-      value={url}
-      placeholder="URL of feature request from discuss.dgraph.com..."
-      on:change={(e) => {
-        url = e.target.value;
-      }}
-    />
-    <br />
-    <Button>{buttonType === 'add' ? 'Add' : 'Edit'}</Button>
-    {#if buttonType === 'edit'}
-      <Button
-        on:click={() => {
-          buttonType = 'add';
-          feature = '';
-          url = '';
-          fid = '';
-        }}>Cancel</Button
-      >
-    {/if}
-  </div>
-</form>
-<br />
-<h5><center>You can only edit and delete your own Feature.</center></h5>
-<Progress percent="100" />
-This is unofficial and does not mean anything. The hope is so the Dgraph team takes
-these seriously and puts focus on the features we want! The next official version
-is
-<strong>
-  <a
-    href="https://discuss.dgraph.io/t/next-release-date-2021-21-07/15167/5?u=jdgamble555"
-  >
-    21.08</a
-  > (as far as we know)
-</strong>
-<Progress percent="100" />
-<br />
-<br />
-<h3>Todo</h3>
-<ul>
-  <li><strike>Edit Feature</strike></li>
-  <li><strike>Unauthorized Error Messages</strike></li>
-  <li>Add a basic role management for admins</li>
-  <li><strike>Roles / @auth for Editors and Users</strike></li>
-  <li><strike>Login with Magic Link</strike></li>
-  <li>Pagination (1-10)</li>
-  <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
-  <li>Add Status (Denied / Pending / New / Complete)</li>
-</ul>
-
-<p>
-  I had to move this to a paid cloud instance (will share it with other apps),
-  so you may have lost your date! Vote again if you need to!
-</p>
-
 <style>
-  .grid-container {
-    display: grid;
-    grid-template-columns: 250px auto;
-    grid-column: 2;
-    justify-items: left;
-    align-items: center;
-    width: fit-content;
+  .flex-container {
+    clear: both;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
   }
-
-  .column {
-    margin: 0px 10px;
+  .flex-row {
+    gap: 1em;
+    display: flex;
   }
-  .inputs {
-    width: 50%;
-  }
-  .thumbs-up {
-    cursor: pointer;
-    margin: 0px 3px;
+  .add-box {
+    text-align: right;
   }
 </style>

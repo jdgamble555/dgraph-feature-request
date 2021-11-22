@@ -101,7 +101,7 @@ type FeatureDQL @remote {
 
 type Query @withSubscription {
   queryFeatureSortedByVotes(id: String = "0x1"): [FeatureDQL] @withSubscription @custom(dql: """
-    query q($id:string = "0x1") {
+    query q($id: string = "0x1") {
       var(func: type(Feature)) {
         totalVotes as count(Feature.votes)
       }
