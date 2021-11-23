@@ -12,9 +12,9 @@ import {
 import * as ws from 'ws';
 import type { Exchange, Operation } from '@urql/core';
 import { getToken } from "./firebase";
-import config from '../config.json';
+import { dgraph_config } from '../config';
 
-const DGRAPH_URL = config['dgraph'];
+const DGRAPH_URL = dgraph_config;
 
 const isServerSide = typeof window === "undefined";
 

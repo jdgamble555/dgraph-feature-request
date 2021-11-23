@@ -64,7 +64,7 @@
 
   onMount(() => {
     // load feature module
-    userSub = userState.subscribe((u: any) => {
+    /*userSub = userState.subscribe((u: any) => {
       if (u) {
         dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
           if (r) {
@@ -78,7 +78,7 @@
     // update on add / update / delete optimistically
     featureSub = featureStore.subscribe((fs: any) => {
       features = fs;
-    });
+    });*/
   });
 
   onDestroy(() => {

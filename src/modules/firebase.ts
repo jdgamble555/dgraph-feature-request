@@ -12,7 +12,8 @@ import {
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { firstValueFrom, Observable } from 'rxjs';
-import config from '../config.json';
+import { firebase_config } from '../config';
+
 
 export interface Auth {
     displayName: string;
@@ -21,7 +22,7 @@ export interface Auth {
     email: string;
 }
 
-initializeApp(config['firebase']);
+initializeApp(firebase_config);
 
 // interface for database record, not firebase record
 export interface UserRec {
