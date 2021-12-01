@@ -1,12 +1,23 @@
 <script lang="ts">
   // material imports
-  import { Button, MaterialApp, AppBar, Icon } from 'svelte-materialify';
-  import { mdiThemeLightDark } from '@mdi/js';
+  import {
+    Button,
+    MaterialApp,
+    AppBar,
+    Icon,
+    Tooltip
+  } from 'svelte-materialify';
+  import {
+    mdiAccountBox,
+    mdiLogin,
+    mdiLogout,
+    mdiThemeLightDark
+  } from '@mdi/js';
 
   import Auth from '../components/auth.svelte';
   import Message from '../components/message.svelte';
   import Confirm from './../components/confirm.svelte';
-  import { showDialog, userState } from '../stores/core';
+  import { showDialog, showSettings, userState } from '../stores/core';
   import { logout } from '../modules/firebase';
   import FeatureForm from '../components/feature-form.svelte';
 
@@ -31,21 +42,38 @@
   <Message />
   <Confirm />
   <FeatureForm />
-  <AppBar class="pink darken-1">
-    <span slot="title" class="white-text"
-      >DGraph Feature Request (Unofficial)</span
-    >
+  <AppBar>
+    <img style="height:35px" alt="DGraph" src="/dgraph-transparent.png" />
     <div style="flex-grow:1 " />
-    <Button icon on:click={toggleTheme}>
-      <Icon path={mdiThemeLightDark} />
-    </Button>
-    <div style="margin: 1em" />
-    {#if !$userState}
-      <Button on:click={() => showDialog.set(true)}>Login</Button>
-    {:else}
-      <Button on:click={logout} small>Logout</Button>
+    <Tooltip bottom>
+      <span slot="tip">Dark / Light Mode</span>
+      <Button icon on:click={toggleTheme}>
+        <Icon path={mdiThemeLightDark} />
+      </Button>
+    </Tooltip>
+    {#if $userState}
+      <div style="margin: 1em" />
+      <Tooltip bottom>
+        <span slot="tip">Profile Settings</span>
+        <Button icon on:click={() => showSettings.set(!$showSettings)}>
+          <Icon path={mdiAccountBox} />
+        </Button>
+      </Tooltip>
     {/if}
-    <div style="margin: .5em" />
+    <div style="margin: 1em" />
+    <Tooltip bottom>
+      <span slot="tip">{userState ? 'Logout' : 'Login'}</span>
+      {#if !$userState}
+        <Button icon on:click={() => showDialog.set(!$showDialog)}>
+          <Icon path={mdiLogin} />
+        </Button>
+      {:else}
+        <Button icon on:click={logout} small>
+          <Icon path={mdiLogout} />
+        </Button>
+      {/if}
+    </Tooltip>
+    <div style="margin: 1em" />
   </AppBar>
   <div class="fullscreen">
     <div class="s-container">
@@ -59,8 +87,9 @@
         <a
           href="https://discuss.dgraph.io/t/next-release-date-2021-21-07/15167/5?u=jdgamble555"
         >
-          21.09</a
-        > (as far as we know)
+          21.09
+        </a>
+        (as far as we know)
       </strong>
       <br />
       <br />

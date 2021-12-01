@@ -46,10 +46,10 @@
     editFeatureRec
   } from '../stores/core';
   import {
-    mdiChevronUpCircleOutline,
     mdiDeleteVariant,
     mdiNoteEditOutline,
-    mdiPlusBox
+    mdiPlusBox,
+    mdiThumbUpOutline
   } from '@mdi/js';
 
   export let features: any[];
@@ -64,7 +64,7 @@
 
   onMount(() => {
     // load feature module
-    /*userSub = userState.subscribe((u: any) => {
+    userSub = userState.subscribe((u: any) => {
       if (u) {
         dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
           if (r) {
@@ -78,7 +78,7 @@
     // update on add / update / delete optimistically
     featureSub = featureStore.subscribe((fs: any) => {
       features = fs;
-    });*/
+    });
   });
 
   onDestroy(() => {
@@ -126,13 +126,14 @@
       <CardActions>
         <div class="flex-container">
           <Button
-            class="purple darken-3 white-text"
+            depressed
+            class="pink darken-2 white-text"
             on:click={async () => {
               const voted = !!(feature.votes && feature.votes[0]);
               fService.toggleVote(feature.id, voted);
             }}
           >
-            <Icon path={mdiChevronUpCircleOutline} class="mr-3" />
+            <Icon size="18px" path={mdiThumbUpOutline} class="mr-3" />
             Votes: {feature.totalVotes}
           </Button>
           {#if $userState && feature.author.id === $userState.id}

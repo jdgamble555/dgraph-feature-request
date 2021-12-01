@@ -15,4 +15,5 @@ export const editFeatureRec = writable<any>(null);
 export const showConfirm = writable<boolean>(false);
 export const showDialog =  writable<boolean>(false);
 export const showForm = writable<boolean>(false);
+export const showSettings = writable<boolean>(false);
 

@@ -52,6 +52,7 @@ const fetchOptionsExchange = (fn: any): Exchange => ({ forward }) => ops$ => {
 };
 
 const client = createClient({
+    fetch: fetch,
     url: `https://${DGRAPH_URL}`,
     exchanges: [
         dedupExchange,

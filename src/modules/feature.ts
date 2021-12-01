@@ -58,10 +58,20 @@ export class Feature {
             // update database
             const r = await new dgraph('feature', this._dev)
                 .update({ name: 1, url: 1, id: 1, votes: { id: 1 } })
-                .filter(fid)
+                .filter({ id: fid })
                 .set({
                     name: feature.name,
-                    url: feature.url
+                    url: feature.url,
+                    /*private: [
+                        { text: 'summer2' },
+                        { text: 'sommer3' }
+                    ]*/
+                })
+                .remove({
+                    private: [
+                        { id: '0xfffd8d6aacdae024' },
+                        { id: '0xfffd8d6aacdae025' }
+                    ]
                 })
                 .build();
 
@@ -107,7 +117,11 @@ export class Feature {
                     url,
                     author: { id: user.id },
                     votes: { id: user.id },
-                    link: { lid: 'link' }
+                    link: { lid: 'link' },
+                    private: [
+                        { text: (Math.random() + 1).toString(36).substring(7) },
+                        { text: (Math.random() + 1).toString(36).substring(7) + 's' }
+                    ]
                 })
                 .build();
             if (r.numUids === 0) {

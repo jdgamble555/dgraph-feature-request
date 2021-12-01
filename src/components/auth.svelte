@@ -29,11 +29,14 @@
   // stores
   import {
     showDialog,
+    showSettings,
     showSnackbarMsg,
     userState
   } from '../stores/core';
 
   let email: string;
+  let username: string;
+  let displayName: string;
   let userSub: Subscription;
   let showEmail = false;
 
@@ -81,6 +84,7 @@
       .build();
     // user does not exist, create user
     if (r) {
+      displayName = r.displayName;
       userState.set(r);
     } else {
       createUser(u);
@@ -99,6 +103,18 @@
       .build();
     userState.set(r);
   }
+
+  async function updateUser(user: any) {
+    const r = await new dgraph('user', dev)
+      .update({ id: 1, email: 1, displayName: 1 })
+      .filter($userState.id)
+      .set(user)
+      .build();
+    console.log(r);
+    userState.set(r);
+    showSnackbarMsg.set('Your user profile has been updated!');
+    showSettings.set(false);
+  }
 </script>
 
 <Dialog bind:active={$showDialog}>
@@ -106,11 +122,9 @@
     <CardTitle>Passwordless Login</CardTitle>
     <CardText>
       <center>
-        <TextField
-          bind:value={email}
-          dense
-          outlined
-        >Enter your email address...</TextField>
+        <TextField bind:value={email} dense outlined>
+          Enter your email address...
+        </TextField>
         <br />
         {#if showEmail}
           <span
@@ -118,24 +132,20 @@
               passwordlessLogin(email);
               email = '';
               showEmail = false;
-            }}
-          >
+            }}>
             <Button>Login</Button>
           </span>
         {:else}
-          <span
+          <Button
             on:click={async () => {
               sendEmailLink($page.host, email, dev).then(() => {
                 email = '';
                 showDialog.set(false);
-                showSnackbarMsg.set(
-                  'Your link has been sent to your email! Check your junk folder!'
-                );
+                showSnackbarMsg.set('Your link has been sent to your email! Check your junk folder!');
               });
-            }}
-          >
-            <Button>Send Magic Link</Button>
-          </span>
+            }}>
+            Send Magic Link
+          </Button>
           <br />
           <br />
           <Divider />
@@ -143,11 +153,35 @@
           OR
           <br />
           <br />
-          <Button class="red white-text" on:click={loginWithGoogle}
-            >Signin with Google</Button
-          >
+          <Button class="red white-text" on:click={loginWithGoogle}>
+            Signin with Google
+          </Button>
         {/if}
       </center>
+    </CardText>
+  </Card>
+</Dialog>
+
+<Dialog bind:active={$showSettings}>
+  <Card>
+    <CardTitle>Profile Settings</CardTitle>
+    <CardText>
+      <TextField bind:value={displayName} dense outlined>
+        Display Name
+      </TextField>
+      <br />
+      <TextField bind:value={username} dense outlined>
+        Username (discuss.dgraph.io)
+      </TextField>
+      <br />
+      <Button
+        class="secondary-color"
+        on:click={() => updateUser({ displayName })}>
+        Save
+      </Button>
+      <Button style="margin: 1em" on:click={() => showSettings.set(false)}>
+        Cancel
+      </Button>
     </CardText>
   </Card>
 </Dialog>

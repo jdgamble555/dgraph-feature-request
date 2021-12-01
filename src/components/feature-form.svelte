@@ -20,7 +20,7 @@
   let fService = new Feature(dev);
 
   function handleKeyup(e: any) {
-    if (e.code == 'Enter') {
+    if (e.code == 'Enter' || e.code == '13') {
       e.preventDefault();
       handleSubmit();
       return false;
@@ -55,18 +55,19 @@
       <CardTitle>{$editFeatureRec ? 'Edit' : 'Add'} a Feature</CardTitle>
       <CardText>
         <div class="inputs">
-          <TextField bind:value={feature} outlined
-            >Short name of feature...</TextField
-          >
-          <TextField bind:value={url} on:keyup={handleKeyup} outlined
-            >URL of feature request from discuss.dgraph.com...</TextField
-          >
+          <TextField bind:value={feature} outlined>Name</TextField>
+          <br />
+          <TextField bind:value={url} on:keyup={handleKeyup} outlined>
+            URL (discuss.dgraph.com)
+          </TextField>
           <br />
         </div>
-        <Button on:click={handleSubmit}
-          >{$editFeatureRec ? 'Edit' : 'Add'}</Button
-        >
-        <Button on:click={() => showForm.set(false)}>Cancel</Button>
+        <Button class="secondary-color" on:click={handleSubmit}
+          >{$editFeatureRec ? 'Edit' : 'Add'}
+        </Button>
+        <Button style="margin: 1em" on:click={() => showForm.set(false)}>
+          Cancel
+        </Button>
       </CardText>
     </Card>
   </form>
