@@ -62,17 +62,17 @@ export class Feature {
                 .set({
                     name: feature.name,
                     url: feature.url,
-                    /*private: [
-                        { text: 'summer2' },
-                        { text: 'sommer3' }
-                    ]*/
+                    private: [
+                        { text: 'summer5' },
+                        { text: 'sommer4' }
+                    ]
                 })
-                .remove({
+                /*.remove({
                     private: [
                         { id: '0xfffd8d6aacdae024' },
                         { id: '0xfffd8d6aacdae025' }
                     ]
-                })
+                })*/
                 .build();
 
             if (r.numUids === 0) {

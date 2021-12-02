@@ -48,8 +48,8 @@ async function deepUpdate({ event, dql, nodes, merge = true }) {
         const type: string = event.__typename;
 
         // get updated keys
-        let toRemove: any;
-        let toAdd: any;
+        let toRemove: string[];
+        let toAdd: string[];
 
         if (removePatch) {
             toRemove = nodes.filter((v: string) => Object.keys(removePatch).includes(v));
@@ -82,11 +82,10 @@ async function deepUpdate({ event, dql, nodes, merge = true }) {
                     // delete all child.parent
                     for (let j = 0; j < ids.length; ++j) {
                         args += `<${ids[j]}> * * . \n`;
-                    }                    
+                    }
                 }
                 args += `} }`;
             }
-
         } else {
 
             // delete all records in 'array'
@@ -94,12 +93,18 @@ async function deepUpdate({ event, dql, nodes, merge = true }) {
 
             // re-add everything
             for (let i = 0; i < toAdd.length; ++i) {
-                
-                // run here
+                args = `{ set { `;
+                const child = setPatch[toAdd[i]];
+                for (let j = 0; j < child.length; ++j) {
+                    args += `<${uid}> <${type}.${toAdd[i].toLowerCase()}> _:new${j} . 
+                    _:new${j} <${titleCase(toAdd[i])}.${type.toLowerCase()}> <${uid}> . 
+                    _:new${j} <${titleCase(toAdd[i])}.${Object.keys(child[j])[0]}> "${Object.values(child[j])[0]}" . 
+                    _:new${j} <dgraph.type> "${titleCase(toAdd[i])}" . \n`;
+                }
+                args += `} }`;
             }
-            // add inverse relationship
-            await cascadeDelete({ dql, nodes, event, _add: true });
         }
+        // mutate
         console.log(args);
         const r = await dql.mutate(args);
         console.log(r);
