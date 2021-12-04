@@ -9,9 +9,7 @@ type User @lambdaOnMutate(add: true, update: true, delete: true) @withSubscripti
       # allow admins to add new users manually
       { rule: "query ($email: String!) { queryUser { link { users(filter: { email: { eq: $email }, role: { eq: ADMIN } }) { id } } } }" },
       # allow users with role author to be added
-      { rule: "query ($email: String!) { queryUser(filter: { email: { eq: $email }, role: { eq: AUTHOR } }) { id } }" },
-      # a system JWT that allows the login script to create new users. TODO: change to something unique to the system JWT
-      { rule: "{$system:{eq:true}}" }
+      { rule: "query ($email: String!) { queryUser(filter: { email: { eq: $email }, role: { eq: AUTHOR } }) { id } }" }
     ]
   },
   # admin 

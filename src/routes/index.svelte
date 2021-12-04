@@ -70,6 +70,7 @@
           if (r) {
             featureStore.set(r);
             features = r;
+            console.log(r);
           }
         });
       }

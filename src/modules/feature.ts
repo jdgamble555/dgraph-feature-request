@@ -28,12 +28,12 @@ export class Feature {
     static async queryFeature(dev = false) {
         return await new dgraph('queryFeatureSortedByVotes', dev)
             .customQuery({
-                id: 1,
-                url: 1,
                 name: 1,
-                votes: { id: 1 },
+                url: 1,
+                id: 1,
+                totalVotes: 1,
                 author: { id: 1 },
-                totalVotes: 1
+                votes: { id: 1 }
             })
             //.networkOnly()
             .build();
@@ -107,11 +107,7 @@ export class Feature {
                     url,
                     author: { id: user.id },
                     votes: { id: user.id },
-                    link: { lid: 'link' },
-                    private: [
-                        { text: (Math.random() + 1).toString(36).substring(7) },
-                        { text: (Math.random() + 1).toString(36).substring(7) + 's' }
-                    ]
+                    link: { lid: 'link' }
                 })
                 .build();
             if (r.numUids === 0) {
