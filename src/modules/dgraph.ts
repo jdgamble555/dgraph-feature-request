@@ -1,6 +1,6 @@
 import { Dgraph } from 'easy-dgraph';
 export { EnumType } from 'easy-dgraph';
-import { map, Observable } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 import { pipe, toObservable } from "wonka";
 import client from "./urql";
 
@@ -29,12 +29,18 @@ export class dgraph extends Dgraph {
         if (this._operation === 'mutation') {
             return await client.mutation(gq, this._urlOpts).toPromise()
                 .then((r) => {
+                    if (typeof r.data === 'string') {
+                        return r.data;
+                    }
                     if (r.error) {
                         console.log(r.error.message);
                     }
                     const r1 = r.data ? Object.keys(r.data)[0] : '';
                     if (r.data) {
                         if (r.data[r1]) {
+                            if (typeof r.data[r1] === 'string') {
+                                return r.data[r1];
+                            }
                             if (r.data[r1].numUids === 0) {
                                 return r.data[r1];
                             }
@@ -46,6 +52,11 @@ export class dgraph extends Dgraph {
                         }
                     }
                     return null;
+                }).then((r) => {
+                    if (this._devMode) {
+                        console.log(r);
+                    }
+                    return r;
                 });
         }
         return await client.query(gq, undefined, this._urlOpts).toPromise()
@@ -54,6 +65,11 @@ export class dgraph extends Dgraph {
                     console.log(r.error.message);
                 }
                 return r.data ? r.data[Object.keys(r.data)[0]] : null;
+            }).then((r) => {
+                if (this._devMode) {
+                    console.log(r);
+                }
+                return r;
             });
     }
     buildSubscription() {
@@ -73,6 +89,11 @@ export class dgraph extends Dgraph {
                     console.log(r.error.message);
                 }
                 return r.data ? r.data[Object.keys(r.data)[0]] : null;
+            }),
+            tap((r) => {
+                if (this._devMode) {
+                    console.log(r);
+                }
             })
         );
     }

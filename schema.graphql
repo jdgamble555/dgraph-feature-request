@@ -31,11 +31,11 @@ type User @lambdaOnMutate(add: true, update: true, delete: true) @withSubscripti
     ]
   }
 ) {
-  id:ID!
+  id: ID!
   email: String! @search(by: [hash]) @id
   displayName: String!
   username: String
-  votedFor:[Feature]
+  votedFor: [Feature]
   suggested: [Feature]
   link: Link!
   role: UserRole! @search
@@ -74,19 +74,12 @@ type Feature @lambdaOnMutate(add: true, update: true, delete: true) @withSubscri
   }
 ) {
   id: ID!
-  name: String! @search(by:[fulltext,term,hash])
-  url: String! @search(by:[exact])
-  votes: [User] @hasInverse(field: votedFor)
+  name: String! @search(by: [fulltext, term, hash])
+  url: String! @search(by: [exact])
   author: User @hasInverse(field: suggested)
+  votes: [User] @hasInverse(field: votedFor)
   timestamp: Timestamp
   link: Link!
-  private: [Private]
-}
-
-type Private {
-  id: ID!
-  text: String!
-  feature: Feature!
 }
 
 type Link @auth(
@@ -111,21 +104,15 @@ type Link @auth(
   features: [Feature] @hasInverse(field: link)
 }
 
-type votesDQL @remote {
-  id: String!
-}
-
-type authorDQL @remote {
-  id: String!
-}
+# Remote types
 
 type FeatureDQL @remote {
   id: ID!
   name: String
   url: String
   totalVotes: Int
-  votes: [votesDQL]
-  author: authorDQL
+  votes: [User]
+  author: User
 }
 
 type Query @withSubscription {
@@ -140,17 +127,21 @@ type Query @withSubscription {
       ) {
         name: Feature.name
         url: Feature.url
+        author: Feature.author {
+          id: uid
+        }
         id: uid
         totalVotes: count(Feature.votes)
         votes: Feature.votes @filter(uid($id)) {
           id: uid
         }
-        author: Feature.author {
-          id: uid
-        }
       }
     }
   """)
+}
+
+type Mutation {
+  toggleVote(id: String!): String! @lambda
 }
 
 # Dgraph.Authorization {"Header":"X-Auth-Token","Namespace":"https://dgraph.io/jwt/claims","JWKURL":"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com","Audience":["dgraph-projects"]}

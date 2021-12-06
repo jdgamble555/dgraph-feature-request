@@ -7,6 +7,17 @@ export class Feature {
     private _tmp: any;
     private _dev: boolean;
 
+    static _q = {
+        id: 1,
+        name: 1,
+        url: 1,
+        author: { id: 1 },
+        totalVotes: 1,
+        votes: {
+            id: 1
+        }
+    };
+
     constructor(dev = false) {
         this._dev = dev;
     }
@@ -14,27 +25,13 @@ export class Feature {
     static subscribeFeature(uid: string, dev = false) {
         return new dgraph('queryFeatureSortedByVotes', dev)
             .filter(uid)
-            .customQuery({
-                name: 1,
-                url: 1,
-                id: 1,
-                totalVotes: 1,
-                author: { id: 1 },
-                votes: { id: 1 }
-            })
-            .buildSubscription()
+            .customQuery(Feature._q)
+            .buildSubscription();
     }
 
     static async queryFeature(dev = false) {
         return await new dgraph('queryFeatureSortedByVotes', dev)
-            .customQuery({
-                name: 1,
-                url: 1,
-                id: 1,
-                totalVotes: 1,
-                author: { id: 1 },
-                votes: { id: 1 }
-            })
+            .customQuery(Feature._q)
             //.networkOnly()
             .build();
     }

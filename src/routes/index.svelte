@@ -9,7 +9,6 @@
     }
     // get features
     const r = await Feature.queryFeature(dev);
-    featureStore.set(r);
 
     // get data as string to save to script tag
     const d = browser
@@ -67,10 +66,9 @@
     userSub = userState.subscribe((u: any) => {
       if (u) {
         dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
-          if (r) {
+          if (r && r.length !== 0) {
             featureStore.set(r);
             features = r;
-            console.log(r);
           }
         });
       }
