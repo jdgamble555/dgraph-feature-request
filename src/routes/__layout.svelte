@@ -6,7 +6,10 @@
     AppBar,
     Icon,
     Tooltip,
-    Divider
+    Divider,
+    Card,
+    CardText,
+    CardActions
   } from 'svelte-materialify';
   import {
     mdiAccountBox,
@@ -82,21 +85,12 @@
       <br />
       <Divider />
       <br />
-      This is unofficial and does not mean anything. The hope is so the Dgraph team
-      takes these seriously and puts focus on the features we want! The next official
-      version is
-      <strong>
-        <a
-          href="https://discuss.dgraph.io/t/dgraph-v21-12-0-zion-release/16215/8"
-        >
-          21.12
-        </a>
-      </strong>
-      , which should be on DGraph Cloud soon!
+      <center>J</center>
+      <br />
     </div>
     <p />
-  </div></MaterialApp
->
+  </div>
+</MaterialApp>
 
 <style>
   .s-container {
