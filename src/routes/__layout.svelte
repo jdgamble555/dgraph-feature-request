@@ -5,7 +5,8 @@
     MaterialApp,
     AppBar,
     Icon,
-    Tooltip
+    Tooltip,
+    Divider
   } from 'svelte-materialify';
   import {
     mdiAccountBox,
@@ -79,41 +80,23 @@
     <div class="s-container">
       <slot />
       <br />
-      <h5><center>You can only edit and delete your own Feature.</center></h5>
+      <Divider />
+      <br />
       This is unofficial and does not mean anything. The hope is so the Dgraph team
       takes these seriously and puts focus on the features we want! The next official
       version is
       <strong>
         <a
-          href="https://discuss.dgraph.io/t/next-release-date-2021-21-07/15167/5?u=jdgamble555"
+          href="https://discuss.dgraph.io/t/dgraph-v21-12-0-zion-release/16215/8"
         >
-          21.09
+          21.12
         </a>
-        (as far as we know)
       </strong>
-      <br />
-      <br />
-      <h3>Todo</h3>
-      <ul>
-        <li><strike>Edit Feature</strike></li>
-        <li><strike>Unauthorized Error Messages</strike></li>
-        <li><strike>Roles / @auth for Editors and Users</strike></li>
-        <li><strike>Login with Magic Link</strike></li>
-        <li>Add a basic role management for admins</li>
-        <li>Pagination (1-10)</li>
-        <li>Add categories (GraphQL, DQL, Cloud DGraph UI)</li>
-        <li>Add Status (Denied / Pending / New / Complete)</li>
-        <li>Potential Difficulty</li>
-        <li>Fix fetch problem under the hood</li>
-        <li>Fix remote types</li>
-      </ul>
-      <p>
-        I had to move this to a paid cloud instance (will share it with other
-        apps), so you may have lost your date! Vote again if you need to!
-      </p>
+      , which should be on DGraph Cloud soon!
     </div>
-  </div>
-</MaterialApp>
+    <p />
+  </div></MaterialApp
+>
 
 <style>
   .s-container {

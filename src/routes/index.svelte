@@ -121,7 +121,9 @@
       <CardSubtitle
         ><a href={feature.url} target="_new">Discuss</a></CardSubtitle
       >
-      <CardText />
+      <CardText>
+        {feature.description}
+      </CardText>
       <CardActions>
         <div class="flex-container">
           <Button
@@ -135,7 +137,7 @@
             <Icon size="18px" path={mdiThumbUpOutline} class="mr-3" />
             Votes: {feature.totalVotes}
           </Button>
-          {#if $userState && feature.author.id === $userState.id}
+          {#if $userState && (feature.author.id === $userState.id || $userState.role === 'ADMIN')}
             <div class="flex-row">
               <Button
                 icon
@@ -155,7 +157,8 @@
                   editFeatureRec.set({
                     id: feature.id,
                     url: feature.url,
-                    name: feature.name
+                    name: feature.name,
+                    description: feature.description
                   });
                   showForm.set(true);
                 }}

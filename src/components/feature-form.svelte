@@ -8,7 +8,8 @@
     CardTitle,
     CardText,
     Dialog,
-    TextField
+    TextField,
+    Textarea
   } from 'svelte-materialify';
   import { dev } from '$app/env';
   import { showForm, editFeatureRec } from '../stores/core';
@@ -16,6 +17,8 @@
   // form items
   let feature: string;
   let url: string;
+  // fix textarea bug
+  let description: string = ' ';
 
   let fService = new Feature(dev);
 
@@ -29,9 +32,9 @@
 
   async function handleSubmit() {
     if ($editFeatureRec) {
-      await fService.updateFeature($editFeatureRec.id, { url, name: feature });
+      await fService.updateFeature($editFeatureRec.id, { url, name: feature, description });
     } else {
-      await fService.addFeature(feature, url);
+      await fService.addFeature(feature, url, description);
     }
     showForm.set(false);
     editFeatureRec.set(null);
@@ -43,9 +46,11 @@
     if ($editFeatureRec) {
       feature = $editFeatureRec.name;
       url = $editFeatureRec.url;
+      description = $editFeatureRec.description;
     } else {
       feature = '';
       url = '';
+      description = '';
     }
   }}
   bind:active={$showForm}
@@ -60,6 +65,10 @@
           <TextField bind:value={url} on:keyup={handleKeyup} outlined>
             URL (discuss.dgraph.com)
           </TextField>
+          <br />
+          <Textarea bind:value={description} on:keyup={handleKeyup} outlined>
+            Brief Description
+          </Textarea>
           <br />
         </div>
         <Button class="secondary-color" on:click={handleSubmit}

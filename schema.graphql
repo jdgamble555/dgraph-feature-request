@@ -76,6 +76,7 @@ type Feature @lambdaOnMutate(add: true, update: true, delete: true) @withSubscri
   id: ID!
   name: String! @search(by: [fulltext, term, hash])
   url: String! @search(by: [exact])
+  description: String!
   author: User @hasInverse(field: suggested)
   votes: [User] @hasInverse(field: votedFor)
   timestamp: Timestamp
@@ -110,6 +111,7 @@ type FeatureDQL @remote {
   id: ID!
   name: String
   url: String
+  description: String
   totalVotes: Int
   votes: [User]
   author: User
@@ -127,6 +129,7 @@ type Query @withSubscription {
       ) {
         name: Feature.name
         url: Feature.url
+        description: Feature.description
         author: Feature.author {
           id: uid
         }

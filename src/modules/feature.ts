@@ -13,6 +13,18 @@ export class Feature {
         url: 1,
         author: { id: 1 },
         totalVotes: 1,
+        description: 1,
+        votes: {
+            id: 1
+        }
+    };
+
+    static _q2 = {
+        id: 1,
+        name: 1,
+        url: 1,
+        description: 1,
+        author: { id: 1 },
         votes: {
             id: 1
         }
@@ -36,7 +48,7 @@ export class Feature {
             .build();
     }
 
-    async updateFeature(fid: string, feature: { url: string, name: string }) {
+    async updateFeature(fid: string, feature: { url: string, name: string, description: string }) {
 
         if (get(userState)) {
 
@@ -48,17 +60,19 @@ export class Feature {
                 if (r.id === fid) {
                     r.url = feature.url;
                     r.name = feature.name;
+                    r.description = feature.description;
                 }
                 return r;
             });
             featureStore.set(f);
             // update database
             const r = await new dgraph('feature', this._dev).pretty()
-                .update({ name: 1, url: 1, id: 1, votes: { id: 1 } })
+                .update(Feature._q2)
                 .filter({ id: fid })
                 .set({
                     name: feature.name,
-                    url: feature.url
+                    url: feature.url,
+                    description: feature.description
                 })
                 .build();
 
@@ -73,7 +87,7 @@ export class Feature {
         }
     }
 
-    async addFeature(feature: string, url: string) {
+    async addFeature(feature: string, url: string, description: string) {
 
         // get user object
         const user = get(userState);
@@ -91,6 +105,7 @@ export class Feature {
                     url,
                     id: 'x',
                     totalVotes: 1,
+                    description,
                     votes: { id: user.id },
                     author: { id: user.id }
                 }
@@ -98,10 +113,11 @@ export class Feature {
             featureStore.set(f);
             // update database
             const r = await new dgraph('feature', this._dev)
-                .add({ name: 1, url: 1, id: 1, votes: { id: 1 } })
+                .add(Feature._q2)
                 .set({
                     name: feature,
                     url,
+                    description,
                     author: { id: user.id },
                     votes: { id: user.id },
                     link: { lid: 'link' }

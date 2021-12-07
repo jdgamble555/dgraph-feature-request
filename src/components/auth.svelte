@@ -37,6 +37,7 @@
   let email: string;
   let username: string;
   let displayName: string;
+  let role: string;
   let userSub: Subscription;
   let showEmail = false;
 
@@ -79,12 +80,14 @@
 
   async function handleUser(u: any) {
     const r = await new dgraph('user', dev)
-      .get({ id: 1, email: 1, displayName: 1 })
+      .get({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
       .filter({ email: u.email })
       .build();
     // user does not exist, create user
     if (r) {
       displayName = r.displayName;
+      role = r.role;
+      username = r.username;
       userState.set(r);
     } else {
       createUser(u);
@@ -93,10 +96,11 @@
 
   async function createUser(u: any) {
     const r = await new dgraph('user', dev)
-      .add({ id: 1, email: 1, displayName: 1 })
+      .add({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
       .set({
         email: u.email,
         displayName: u.displayName,
+        username: u.username,
         link: { lid: 'link' },
         role: new EnumType('AUTHOR')
       })
@@ -106,7 +110,7 @@
 
   async function updateUser(user: any) {
     const r = await new dgraph('user', dev)
-      .update({ id: 1, email: 1, displayName: 1 })
+      .update({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
       .filter($userState.id)
       .set(user)
       .build();
@@ -132,7 +136,8 @@
               passwordlessLogin(email);
               email = '';
               showEmail = false;
-            }}>
+            }}
+          >
             <Button>Login</Button>
           </span>
         {:else}
@@ -141,9 +146,12 @@
               sendEmailLink($page.host, email, dev).then(() => {
                 email = '';
                 showDialog.set(false);
-                showSnackbarMsg.set('Your link has been sent to your email! Check your junk folder!');
+                showSnackbarMsg.set(
+                  'Your link has been sent to your email! Check your junk folder!'
+                );
               });
-            }}>
+            }}
+          >
             Send Magic Link
           </Button>
           <br />
@@ -174,9 +182,12 @@
         Username (discuss.dgraph.io)
       </TextField>
       <br />
+      <span class="text-h6 mb-2"><b>Role: </b> {role}</span>
+      <p />
       <Button
         class="secondary-color"
-        on:click={() => updateUser({ displayName })}>
+        on:click={() => updateUser({ displayName, username })}
+      >
         Save
       </Button>
       <Button style="margin: 1em" on:click={() => showSettings.set(false)}>
