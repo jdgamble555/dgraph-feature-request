@@ -59,7 +59,7 @@
   let userSub: Unsubscriber;
   let featureSub: Unsubscriber;
 
-  let fService = new Feature(dev);
+  const fService = new Feature(dev);
 
   onMount(() => {
     // load feature module
@@ -68,7 +68,6 @@
         dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
           if (r && r.length !== 0) {
             featureStore.set(r);
-            features = r;
           }
         });
       }
@@ -76,7 +75,9 @@
 
     // update on add / update / delete optimistically
     featureSub = featureStore.subscribe((fs: any) => {
-      features = fs;
+      if (fs && fs.length !== 0) {
+        features = fs;
+      }
     });
   });
 

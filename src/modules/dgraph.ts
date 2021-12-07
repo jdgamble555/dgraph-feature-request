@@ -1,6 +1,6 @@
 import { Dgraph } from 'easy-dgraph';
 export { EnumType } from 'easy-dgraph';
-import { map, Observable, tap } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { pipe, toObservable } from "wonka";
 import client from "./urql";
 
@@ -90,10 +90,11 @@ export class dgraph extends Dgraph {
                 }
                 return r.data ? r.data[Object.keys(r.data)[0]] : null;
             }),
-            tap((r) => {
+            map((r) => {
                 if (this._devMode) {
                     console.log(r);
                 }
+                return r;
             })
         );
     }
