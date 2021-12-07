@@ -64,13 +64,13 @@
   onMount(() => {
     // load feature module
     userSub = userState.subscribe((u: any) => {
-      if (u) {
-        dgraphSub = Feature.subscribeFeature(u.id).subscribe((r: any) => {
-          if (r && r.length !== 0) {
-            featureStore.set(r);
-          }
-        });
-      }
+      // random id or userid
+      const id = u ? u.id : '0x1';
+      dgraphSub = Feature.subscribeFeature(id).subscribe((r: any) => {
+        if (r && r.length !== 0) {
+          featureStore.set(r);
+        }
+      });
     });
 
     // update on add / update / delete optimistically

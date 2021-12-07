@@ -63,7 +63,7 @@
     {/if}
     <div style="margin: 1em" />
     <Tooltip bottom>
-      <span slot="tip">{userState ? 'Logout' : 'Login'}</span>
+      <span slot="tip">{$userState ? 'Logout' : 'Login'}</span>
       {#if !$userState}
         <Button icon on:click={() => showDialog.set(!$showDialog)}>
           <Icon path={mdiLogin} />
