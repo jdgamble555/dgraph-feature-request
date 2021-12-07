@@ -44,7 +44,7 @@ export class Feature {
     static async queryFeature(dev = false) {
         return await new dgraph('queryFeatureSortedByVotes', dev)
             .customQuery(Feature._q)
-            //.networkOnly()
+            .networkOnly()
             .build();
     }
 
