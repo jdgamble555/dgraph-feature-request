@@ -33,7 +33,7 @@ type User @lambdaOnMutate(add: true, update: true, delete: true) @withSubscripti
 ) {
   id: ID!
   email: String! @search(by: [hash]) @id
-  displayName: String!
+  displayName: String
   username: String
   votedFor: [Feature]
   suggested: [Feature]

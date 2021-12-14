@@ -37,6 +37,7 @@
     "node-sass": "^6.0.1",
     "rxjs": "^7.4.0",
     "subscriptions-transport-ws": "^0.11.0",
+    "svelte-infinite-scroll": "^2.0.0",
     "svelte-materialify": "^0.3.11",
     "wonka": "^4.0.15",
     "ws": "^8.2.3"

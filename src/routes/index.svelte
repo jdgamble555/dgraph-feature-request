@@ -63,7 +63,7 @@
 
   onMount(() => {
     // load feature module
-    userSub = userState.subscribe((u: any) => {
+    userSub = userState.subscribe((u) => {
       // random id or userid
       const id = u ? u.id : '0x1';
       dgraphSub = Feature.subscribeFeature(id).subscribe((r: any) => {
@@ -115,11 +115,13 @@
 <br />
 <Card outlined>
   <CardText>
-    <strong>Login at the top right, add your feature, and vote on others!</strong>
+    <strong
+      >Login at the top right, add your feature, and vote on others!</strong
+    >
     <p />
-    This is <b>unofficial</b> and does not mean anything. The hope is so the
-    Dgraph team takes these seriously and puts focus on the features we
-    want! The next official version is
+    This is<b>unofficial</b> and does not mean anything. The hope is so the
+    Dgraph team takes these seriously and puts focus on the features we want!
+    The next official version is
     <strong>
       <a
         href="https://discuss.dgraph.io/t/dgraph-v21-12-0-zion-release/16215/8"
@@ -137,9 +139,11 @@
       <CardTitle>
         {feature.name}
       </CardTitle>
-      <CardSubtitle
-        ><a href={feature.url} target="_new">Discuss</a></CardSubtitle
-      >
+      <CardSubtitle>
+        {#if feature.url}
+          <a href={feature.url} target="_new">Discuss</a>
+        {/if}
+      </CardSubtitle>
       <CardText>
         {feature.description}
       </CardText>

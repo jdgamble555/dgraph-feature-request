@@ -6,10 +6,7 @@
     AppBar,
     Icon,
     Tooltip,
-    Divider,
-    Card,
-    CardText,
-    CardActions
+    Divider
   } from 'svelte-materialify';
   import {
     mdiAccountBox,
@@ -24,6 +21,7 @@
   import { showDialog, showSettings, userState } from '../stores/core';
   import { logout } from '../modules/firebase';
   import FeatureForm from '../components/feature-form.svelte';
+  import { get } from 'svelte/store';
 
   let theme: 'light' | 'dark' = 'light';
   function toggleTheme() {
@@ -55,20 +53,21 @@
         <Icon path={mdiThemeLightDark} />
       </Button>
     </Tooltip>
-    {#if $userState}
-      <div style="margin: 1em" />
+    <div style="margin: 1em" hidden={!$userState} />
+    <!-- user hidden instead of if due to tooltip bug -->
+    <div hidden={!$userState}>
       <Tooltip bottom>
         <span slot="tip">Profile Settings</span>
-        <Button icon on:click={() => showSettings.set(!$showSettings)}>
+        <Button icon on:click={() => showSettings.set(!get(showSettings))}>
           <Icon path={mdiAccountBox} />
         </Button>
       </Tooltip>
-    {/if}
+    </div>
     <div style="margin: 1em" />
     <Tooltip bottom>
       <span slot="tip">{$userState ? 'Logout' : 'Login'}</span>
       {#if !$userState}
-        <Button icon on:click={() => showDialog.set(!$showDialog)}>
+        <Button icon on:click={() => showDialog.set(!get(showDialog))}>
           <Icon path={mdiLogin} />
         </Button>
       {:else}
