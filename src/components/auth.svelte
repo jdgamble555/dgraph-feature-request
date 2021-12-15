@@ -100,7 +100,6 @@
       .set({
         email: u.email,
         displayName: u.displayName,
-        username: u.username,
         link: { lid: 'link' },
         role: new EnumType('AUTHOR')
       })
