@@ -1,20 +1,14 @@
 <script context="module" lang="ts">
-  import { dev, browser } from '$app/env';
-  import { ssr, data } from '../modules/urql';
+  import { dev } from '$app/env';
+  import { Feature } from '../modules/feature';
 
-  export async function load() {
-    // restore data from server to prevent double fetching
-    if (browser) {
-      ssr.restoreData(window['__URQL_DATA__']);
-    }
+  let fService: Feature;
+
+  export async function load({ fetch }) {
     // get features
-    const r = await Feature.queryFeature(dev);
-
-    // get data as string to save to script tag
-    const d = browser
-      ? ''
-      : data.replace('__SSR__', JSON.stringify(ssr.extractData()));
-    return { props: { features: r, d } };
+    fService = new Feature(dev, fetch);
+    const r = await fService.queryFeature();
+    return { props: { features: r } };
   }
 </script>
 
@@ -23,8 +17,6 @@
 
   import type { Subscription } from 'rxjs';
   import type { Unsubscriber } from 'svelte/store';
-
-  import { Feature } from '../modules/feature';
 
   // material imports
   import {
@@ -41,7 +33,7 @@
     showConfirm,
     delFeatureRec,
     userState,
-    showForm,
+    showFeatureForm,
     editFeatureRec
   } from '../stores/core';
   import {
@@ -52,21 +44,18 @@
   } from '@mdi/js';
 
   export let features: any[];
-  export let d: any;
 
   let dgraphSub: Subscription;
 
   let userSub: Unsubscriber;
   let featureSub: Unsubscriber;
 
-  const fService = new Feature(dev);
-
   onMount(() => {
     // load feature module
     userSub = userState.subscribe((u) => {
       // random id or userid
-      const id = u ? u.id : '0x1';
-      dgraphSub = Feature.subscribeFeature(id).subscribe((r: any) => {
+      const id = u ? u.id : null;
+      dgraphSub = fService.subscribeFeature(id).subscribe((r: any) => {
         if (r && r.length !== 0) {
           featureStore.set(r);
         }
@@ -91,15 +80,12 @@
 <!-- hide warning -->
 {#if false}<slot />{/if}
 
-<!-- save data to script tag to restore on client -->
-{@html d}
-
 <h3>Dgraph Unofficial Feature Voting System</h3>
 <div class="add-box">
   <Button
     on:click={() => {
       if ($userState) {
-        showForm.set(true);
+        showFeatureForm.set(true);
         editFeatureRec.set(null);
       } else {
         fService.loginError();
@@ -115,9 +101,9 @@
 <br />
 <Card outlined>
   <CardText>
-    <strong
-      >Login at the top right, add your feature, and vote on others!</strong
-    >
+    <strong>
+      Login at the top right, add your feature, and vote on others!
+    </strong>
     <p />
     This is<b>unofficial</b> and does not mean anything. The hope is so the
     Dgraph team takes these seriously and puts focus on the features we want!
@@ -183,7 +169,7 @@
                     name: feature.name,
                     description: feature.description
                   });
-                  showForm.set(true);
+                  showFeatureForm.set(true);
                 }}
               >
                 <Icon path={mdiNoteEditOutline} />

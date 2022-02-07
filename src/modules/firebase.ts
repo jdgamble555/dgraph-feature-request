@@ -11,7 +11,8 @@ import {
     signOut
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { firstValueFrom, Observable } from 'rxjs';
+import { readable } from 'svelte/store';
+
 import { firebase_config } from '../config';
 
 
@@ -41,16 +42,9 @@ export async function logout() {
     return await signOut(auth);
 }
 
-export async function getToken() {
-    const u = new Observable<User>((observer) => {
-        onIdTokenChanged(auth, (observer));
-    });
-    return await firstValueFrom(u)
-        .then(async (_user) => _user
-            ? await getIdToken(_user)
-            : null
-        );
-}
+export const getToken = async () => new Promise<User>((res: any, rej: any) =>
+    onIdTokenChanged(auth, res, rej))
+    .then(async (user: User) => user ? await getIdToken(user) : null);
 
 export async function sendEmailLink(host: string, email: string, isDev = false): Promise<void> {
     const actionCodeSettings = {
@@ -90,13 +84,11 @@ export async function confirmSignIn(url: string, email?: string): Promise<boolea
     return false;
 }
 
-export function user(): Observable<User | null> {
-    return new Observable((subscriber) => {
-        const unsubscribe = onIdTokenChanged(auth,
-            subscriber.next.bind(subscriber),
-            subscriber.error.bind(subscriber),
-            subscriber.complete.bind(subscriber),
-        );
-        return { unsubscribe };
-    });
-}
+export const user = readable(null, set => {
+    const unsubscribe = onIdTokenChanged(auth, (u: User) => set(u));
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    }
+});

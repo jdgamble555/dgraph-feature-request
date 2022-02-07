@@ -11,6 +11,8 @@
     sendEmailLink
   } from '../modules/firebase';
 
+  import { User } from '../modules/user';
+
   // materialify
   import {
     Button,
@@ -23,23 +25,27 @@
   } from 'svelte-materialify';
 
   // dgraph imports
-  import { dgraph, EnumType } from '../modules/dgraph';
   import type { Subscription } from 'rxjs';
 
   // stores
   import {
     showDialog,
-    showSettings,
+    showAuthSettings,
     showSnackbarMsg,
     userState
   } from '../stores/core';
 
-  let email: string;
-  let username: string;
-  let displayName: string;
-  let role: string;
+  let userRec: {
+    email: string;
+    username: string;
+    displayName: string;
+    role: string;
+  };
+
   let userSub: Subscription;
   let showEmail = false;
+
+  let userService = new User(dev);
 
   function passwordlessLogin(email?: string) {
     const url = $page.query.toString();
@@ -64,10 +70,21 @@
     }
 
     // watch user state
-    userSub = user().subscribe((u) => {
+    userSub = user().subscribe(async (u: any) => {
+      // logged in
       if (u) {
         showDialog.set(false);
-        handleUser(u);
+        // get user
+        let r = await userService.getUser(u);
+        // user does not exist, create user
+        if (!r) {
+          r = await userService.createUser(u);
+        }
+        userRec.displayName = r.displayName;
+        userRec.role = r.role;
+        userRec.username = r.username;
+        userState.set(r);
+        // not logged in
       } else {
         userState.set(null);
       }
@@ -78,45 +95,11 @@
     userSub ? userSub.unsubscribe() : null;
   });
 
-  async function handleUser(u: any) {
-    const r = await new dgraph('user', dev)
-      .get({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
-      .filter({ email: u.email })
-      .build();
-    // user does not exist, create user
-    if (r) {
-      displayName = r.displayName;
-      role = r.role;
-      username = r.username;
-      userState.set(r);
-    } else {
-      createUser(u);
-    }
-  }
-
-  async function createUser(u: any) {
-    const r = await new dgraph('user', dev)
-      .add({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
-      .set({
-        email: u.email,
-        displayName: u.displayName,
-        link: { lid: 'link' },
-        role: new EnumType('AUTHOR')
-      })
-      .build();
-    userState.set(r);
-  }
-
   async function updateUser(user: any) {
-    const r = await new dgraph('user', dev)
-      .update({ id: 1, email: 1, displayName: 1, role: 1, username: 1 })
-      .filter($userState.id)
-      .set(user)
-      .build();
-    console.log(r);
+    const r = await userService.updateUser($userState.id, user);
     userState.set(r);
     showSnackbarMsg.set('Your user profile has been updated!');
-    showSettings.set(false);
+    showAuthSettings.set(false);
   }
 </script>
 
@@ -125,15 +108,15 @@
     <CardTitle>Passwordless Login</CardTitle>
     <CardText>
       <center>
-        <TextField bind:value={email} dense outlined>
+        <TextField bind:value={userRec.email} dense outlined>
           Enter your email address...
         </TextField>
         <br />
         {#if showEmail}
           <span
             on:click={() => {
-              passwordlessLogin(email);
-              email = '';
+              passwordlessLogin(userRec.email);
+              userRec.email = '';
               showEmail = false;
             }}
           >
@@ -142,8 +125,8 @@
         {:else}
           <Button
             on:click={async () => {
-              sendEmailLink($page.host, email, dev).then(() => {
-                email = '';
+              sendEmailLink($page.host, userRec.email, dev).then(() => {
+                userRec.email = '';
                 showDialog.set(false);
                 showSnackbarMsg.set(
                   'Your link has been sent to your email! Check your junk folder!'
@@ -169,27 +152,31 @@
   </Card>
 </Dialog>
 
-<Dialog bind:active={$showSettings}>
+<Dialog bind:active={$showAuthSettings}>
   <Card>
     <CardTitle>Profile Settings</CardTitle>
     <CardText>
-      <TextField bind:value={displayName} dense outlined>
+      <TextField bind:value={userRec.displayName} dense outlined>
         Display Name
       </TextField>
       <br />
-      <TextField bind:value={username} dense outlined>
+      <TextField bind:value={userRec.username} dense outlined>
         Username (discuss.dgraph.io)
       </TextField>
       <br />
-      <span class="text-h6 mb-2"><b>Role: </b> {role}</span>
+      <span class="text-h6 mb-2"><b>Role: </b> {userRec.role}</span>
       <p />
       <Button
         class="secondary-color"
-        on:click={() => updateUser({ displayName, username })}
+        on:click={() =>
+          updateUser({
+            displayName: userRec.displayName,
+            username: userRec.username
+          })}
       >
         Save
       </Button>
-      <Button style="margin: 1em" on:click={() => showSettings.set(false)}>
+      <Button style="margin: 1em" on:click={() => showAuthSettings.set(false)}>
         Cancel
       </Button>
     </CardText>

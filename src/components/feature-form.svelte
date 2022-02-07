@@ -12,7 +12,7 @@
     Textarea
   } from 'svelte-materialify';
   import { dev } from '$app/env';
-  import { showForm, editFeatureRec } from '../stores/core';
+  import { showFeatureForm, editFeatureRec } from '../stores/core';
 
   // form items
   let feature: string;
@@ -22,21 +22,17 @@
 
   let fService = new Feature(dev);
 
-  function handleKeyup(e: any) {
-    if (e.code == 'Enter' || e.code == '13') {
-      e.preventDefault();
-      handleSubmit();
-      return false;
-    }
-  }
-
   async function handleSubmit() {
     if ($editFeatureRec) {
-      await fService.updateFeature($editFeatureRec.id, { url, name: feature, description });
+      await fService.updateFeature($editFeatureRec.id, {
+        url,
+        name: feature,
+        description
+      });
     } else {
       await fService.addFeature(feature, url, description);
     }
-    showForm.set(false);
+    showFeatureForm.set(false);
     editFeatureRec.set(null);
   }
 </script>
@@ -53,7 +49,7 @@
       description = '';
     }
   }}
-  bind:active={$showForm}
+  bind:active={$showFeatureForm}
 >
   <form on:submit|preventDefault={handleSubmit}>
     <Card>
@@ -62,19 +58,19 @@
         <div class="inputs">
           <TextField bind:value={feature} outlined>Name</TextField>
           <br />
-          <TextField bind:value={url} on:keyup={handleKeyup} outlined>
+          <TextField bind:value={url} outlined>
             URL (discuss.dgraph.com)
           </TextField>
           <br />
-          <Textarea bind:value={description} on:keyup={handleKeyup} outlined>
+          <Textarea bind:value={description} outlined>
             Brief Description
           </Textarea>
           <br />
         </div>
-        <Button class="secondary-color" on:click={handleSubmit}
-          >{$editFeatureRec ? 'Edit' : 'Add'}
+        <Button class="secondary-color" on:click={handleSubmit}>
+          {$editFeatureRec ? 'Edit' : 'Add'}
         </Button>
-        <Button style="margin: 1em" on:click={() => showForm.set(false)}>
+        <Button style="margin: 1em" on:click={() => showFeatureForm.set(false)}>
           Cancel
         </Button>
       </CardText>

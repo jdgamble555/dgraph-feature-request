@@ -15,13 +15,13 @@
     mdiThemeLightDark
   } from '@mdi/js';
 
-  import Auth from '../components/auth.svelte';
+  import Auth from '../components/auth-form.svelte';
   import Message from '../components/message.svelte';
   import Confirm from './../components/confirm.svelte';
-  import { showDialog, showSettings, userState } from '../stores/core';
-  import { logout } from '../modules/firebase';
   import FeatureForm from '../components/feature-form.svelte';
-  import { get } from 'svelte/store';
+
+  import { showDialog, showAuthSettings, userState } from '../stores/core';
+  import { logout } from '../modules/firebase';
 
   let theme: 'light' | 'dark' = 'light';
   function toggleTheme() {
@@ -58,7 +58,7 @@
     <div hidden={!$userState}>
       <Tooltip bottom>
         <span slot="tip">Profile Settings</span>
-        <Button icon on:click={() => showSettings.set(!get(showSettings))}>
+        <Button icon on:click={() => showAuthSettings.set(!$showAuthSettings)}>
           <Icon path={mdiAccountBox} />
         </Button>
       </Tooltip>
@@ -67,7 +67,7 @@
     <Tooltip bottom>
       <span slot="tip">{$userState ? 'Logout' : 'Login'}</span>
       {#if !$userState}
-        <Button icon on:click={() => showDialog.set(!get(showDialog))}>
+        <Button icon on:click={() => showDialog.set(!$showDialog)}>
           <Icon path={mdiLogin} />
         </Button>
       {:else}

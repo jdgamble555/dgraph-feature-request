@@ -1,13 +1,18 @@
+import { dgraph } from 'j-dgraph';
 import { get } from 'svelte/store';
-import { dgraph } from './dgraph';
-import { showSnackbarMsg, userState, featureStore } from '../stores/core';
+
+import { dgraph_config } from '../config';
+import { featureStore, showSnackbarMsg, userState } from '../stores/core';
+
+import { getToken } from './firebase';
+
 
 export class Feature {
 
+    private _dgraph: dgraph;
     private _tmp: any;
-    private _dev: boolean;
 
-    static _q = {
+    private _q = {
         id: 1,
         name: 1,
         url: 1,
@@ -19,7 +24,7 @@ export class Feature {
         }
     };
 
-    static _q2 = {
+    private _q2 = {
         id: 1,
         name: 1,
         url: 1,
@@ -30,20 +35,27 @@ export class Feature {
         }
     };
 
-    constructor(dev = false) {
-        this._dev = dev;
+    constructor(dev = false, fetch = null) {
+        this._dgraph = new dgraph({
+            isDevMode: dev,
+            url: dgraph_config,
+            headers: async () => ({
+                "X-Auth-Token": await getToken()
+            }),
+            fetch
+        });
     }
 
-    static subscribeFeature(uid: string, dev = false) {
-        return new dgraph('queryFeatureSortedByVotes', dev)
+    subscribeFeature(uid: string) {
+        return this._dgraph.type('queryFeatureSortedByVotes')
             .filter(uid)
-            .customQuery(Feature._q)
+            .customQuery(this._q)
             .buildSubscription();
     }
 
-    static async queryFeature(dev = false) {
-        return await new dgraph('queryFeatureSortedByVotes', dev)
-            .customQuery(Feature._q)
+    async queryFeature() {
+        return await this._dgraph.type('queryFeatureSortedByVotes')
+            .customQuery(this._q)
             //.networkOnly()
             .build();
     }
@@ -66,8 +78,8 @@ export class Feature {
             });
             featureStore.set(f);
             // update database
-            const r = await new dgraph('feature', this._dev).pretty()
-                .update(Feature._q2)
+            const r = await this._dgraph.type('feature').pretty()
+                .update(this._q2)
                 .filter({ id: fid })
                 .set({
                     name: feature.name,
@@ -112,8 +124,8 @@ export class Feature {
             ];
             featureStore.set(f);
             // update database
-            const r = await new dgraph('feature', this._dev)
-                .add(Feature._q2)
+            const r = await this._dgraph.type('feature')
+                .add(this._q2)
                 .set({
                     name: feature,
                     url,
@@ -150,7 +162,7 @@ export class Feature {
             // optimistic update ui first
             const f = this._tmp.filter((r: any) => r.id !== id);
             featureStore.set(f);
-            const r = await new dgraph('feature', this._dev).delete().filter(id).build();
+            const r = await this._dgraph.type('feature').delete().filter(id).build();
             if (r.numUids === 0) {
                 showSnackbarMsg.set('You are not authorized to perform that action!');
                 featureStore.set(this._tmp);
@@ -182,7 +194,7 @@ export class Feature {
             });
             featureStore.set(f);
             // update database
-            const r = await new dgraph('toggleVote', this._dev)
+            const r = await this._dgraph.type('toggleVote')
                 .filter(id)
                 .customMutation()
                 .build();
