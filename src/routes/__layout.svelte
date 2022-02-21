@@ -82,7 +82,7 @@
     <div class="s-container">
       <slot />
       <br />
-      <Divider />
+      <Divider inset />
       <br />
       <center>J</center>
       <br />

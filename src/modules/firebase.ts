@@ -11,7 +11,7 @@ import {
     signOut
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { readable } from 'svelte/store';
+import { readable, Subscriber } from 'svelte/store';
 
 import { firebase_config } from '../config';
 
@@ -84,11 +84,6 @@ export async function confirmSignIn(url: string, email?: string): Promise<boolea
     return false;
 }
 
-export const user = readable(null, set => {
-    const unsubscribe = onIdTokenChanged(auth, (u: User) => set(u));
-    return () => {
-        if (unsubscribe) {
-            unsubscribe();
-        }
-    }
-});
+export const user = readable<User>(null, (set: Subscriber<User>) =>
+    onIdTokenChanged(auth, (u: User) => set(u))
+);

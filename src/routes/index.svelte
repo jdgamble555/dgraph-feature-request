@@ -2,20 +2,22 @@
   import { dev } from '$app/env';
   import { Feature } from '../modules/feature';
 
-  let fService: Feature;
-
   export async function load({ fetch }) {
-    // get features
-    fService = new Feature(dev, fetch);
-    const r = await fService.queryFeature();
-    return { props: { features: r } };
+    const res = await fetch('/features');
+    if (res.ok) {
+      return {
+        props: { features: await res.json() }
+      };
+    }
+    return {
+      status: res.status,
+      error: new Error()
+    };
   }
 </script>
 
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-
-  import type { Subscription } from 'rxjs';
   import type { Unsubscriber } from 'svelte/store';
 
   // material imports
@@ -45,7 +47,9 @@
 
   export let features: any[];
 
-  let dgraphSub: Subscription;
+  const fService = new Feature(dev, fetch);
+
+  let dgraphSub: any;
 
   let userSub: Unsubscriber;
   let featureSub: Unsubscriber;

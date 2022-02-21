@@ -24,9 +24,6 @@
     Divider
   } from 'svelte-materialify';
 
-  // dgraph imports
-  import type { Subscription } from 'rxjs';
-
   // stores
   import {
     showDialog,
@@ -34,6 +31,7 @@
     showSnackbarMsg,
     userState
   } from '../stores/core';
+  import type { Unsubscriber } from 'svelte/store';
 
   let userRec: {
     email: string;
@@ -42,13 +40,13 @@
     role: string;
   };
 
-  let userSub: Subscription;
+  let userSub: Unsubscriber;
   let showEmail = false;
 
   let userService = new User(dev);
 
   function passwordlessLogin(email?: string) {
-    const url = $page.query.toString();
+    const url = $page.url.searchParams.toString();
     confirmSignIn(url, email).then((s) => {
       if (s) {
         showSnackbarMsg.set('You are now signed in!');
@@ -60,7 +58,7 @@
 
   onMount(() => {
     // passwordless login signin
-    if ($page.query.get('apiKey')) {
+    if ($page.url.searchParams.get('apiKey')) {
       if (localStorage.getItem('emailForSignIn')) {
         passwordlessLogin();
       } else {
@@ -70,7 +68,7 @@
     }
 
     // watch user state
-    userSub = user().subscribe(async (u: any) => {
+    userSub = user.subscribe(async (u: any) => {
       // logged in
       if (u) {
         showDialog.set(false);
@@ -92,7 +90,7 @@
   });
 
   onDestroy(() => {
-    userSub ? userSub.unsubscribe() : null;
+    userSub ? userSub() : null;
   });
 
   async function updateUser(user: any) {
@@ -125,7 +123,7 @@
         {:else}
           <Button
             on:click={async () => {
-              sendEmailLink($page.host, userRec.email, dev).then(() => {
+              sendEmailLink($page.url.host, userRec.email, dev).then(() => {
                 userRec.email = '';
                 showDialog.set(false);
                 showSnackbarMsg.set(
@@ -138,7 +136,7 @@
           </Button>
           <br />
           <br />
-          <Divider />
+          <Divider inset />
           <br />
           OR
           <br />
