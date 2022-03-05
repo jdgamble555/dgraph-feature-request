@@ -9,14 +9,13 @@ export class User {
 
     private _dgraph: dgraph;
 
-    constructor(dev = false, fetch = null) {
+    constructor(dev = false) {
         this._dgraph = new dgraph({
             isDevMode: dev,
             url: dgraph_config,
             headers: async () => ({
                 "X-Auth-Token": await getToken()
-            }),
-            fetch
+            })
         });
     }
 

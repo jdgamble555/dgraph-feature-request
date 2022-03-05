@@ -78,7 +78,7 @@ export class Feature {
             });
             featureStore.set(f);
             // update database
-            const r = await this._dgraph.type('feature').pretty()
+            const r = await this._dgraph.type('feature')
                 .update(this._q2)
                 .filter({ id: fid })
                 .set({
@@ -88,7 +88,7 @@ export class Feature {
                 })
                 .build();
 
-            if (r.numUids === 0) {
+            if (r.data.length === 0) {
                 showSnackbarMsg.set('You are not authorized to perform that action!');
                 featureStore.set(this._tmp);
             } else {
@@ -135,7 +135,7 @@ export class Feature {
                     link: { lid: 'link' }
                 })
                 .build();
-            if (r.numUids === 0) {
+            if (r.data.length === 0) {
                 showSnackbarMsg.set('You are not authorized to perform that action!');
                 featureStore.set(this._tmp);
             } else {
@@ -163,7 +163,7 @@ export class Feature {
             const f = this._tmp.filter((r: any) => r.id !== id);
             featureStore.set(f);
             const r = await this._dgraph.type('feature').delete().filter(id).build();
-            if (r.numUids === 0) {
+            if (r.data.length === 0) {
                 showSnackbarMsg.set('You are not authorized to perform that action!');
                 featureStore.set(this._tmp);
             } else {
@@ -198,7 +198,7 @@ export class Feature {
                 .filter(id)
                 .customMutation()
                 .build();
-            if (r.numUids === 0) {
+            if (r.data.length === 0) {
                 showSnackbarMsg.set('You are not authorized to perform that action!');
                 featureStore.set(this._tmp);
             } else {

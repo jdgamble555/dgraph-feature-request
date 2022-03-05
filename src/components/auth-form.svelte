@@ -38,7 +38,7 @@
     username: string;
     displayName: string;
     role: string;
-  };
+  } = { email: '', username: '', displayName: '', role: '' };
 
   let userSub: Unsubscriber;
   let showEmail = false;
@@ -73,15 +73,15 @@
       if (u) {
         showDialog.set(false);
         // get user
-        let r = await userService.getUser(u);
+        let { data } = await userService.getUser(u);
         // user does not exist, create user
-        if (!r) {
-          r = await userService.createUser(u);
+        if (!data) {
+          data = (await userService.createUser(u)).data;
         }
-        userRec.displayName = r.displayName;
-        userRec.role = r.role;
-        userRec.username = r.username;
-        userState.set(r);
+        userRec.displayName = data.displayName;
+        userRec.role = data.role;
+        userRec.username = data.username;
+        userState.set(data);
         // not logged in
       } else {
         userState.set(null);
@@ -94,8 +94,8 @@
   });
 
   async function updateUser(user: any) {
-    const r = await userService.updateUser($userState.id, user);
-    userState.set(r);
+    const { data } = await userService.updateUser($userState.id, user);
+    userState.set(data);
     showSnackbarMsg.set('Your user profile has been updated!');
     showAuthSettings.set(false);
   }
